@@ -1,5 +1,4 @@
-from src.worker import Worker
-from src.workforce import Workforce
+from src.worker import Worker, Workforce
 
 def main():
     workforce = Workforce()
