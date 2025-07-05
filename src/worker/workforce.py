@@ -5,10 +5,27 @@ class Workforce:
         self.workers = []
 
     def add_worker(self, worker):
+        if worker.name in [w.name for w in self.workers]:
+            raise ValueError(f"Worker with name '{worker.name}' already exists in the workforce.")
         self.workers.append(worker)
 
     def get_workers(self):
         return self.workers
+
+    def update_worker(self, name, worker):
+        for w in self.workers:
+            if w.name == name:
+                self.remove_worker(name)
+                self.add_worker(worker)
+                return
+        raise ValueError(f"Worker with name '{worker.name}' not found in the workforce.")
+
+    def remove_worker(self, name):
+        for i, w in enumerate(self.workers):
+            if w.name == name:
+                self.workers.pop(i)
+                return
+        raise ValueError(f"Worker with name '{name}' not found in the workforce.")
 
     def save(self, filename='workers.yaml'):
         # Convert Pydantic models to dictionaries, excluding the workforce field
@@ -33,12 +50,10 @@ class Workforce:
             for worker_data in workers_data:
                 # Remove the workforce field from data since it will be set automatically
                 worker_data_copy = worker_data.copy()
-                if 'workforce' in worker_data_copy:
-                    del worker_data_copy['workforce']
-                
+               
                 # Create worker with this workforce instance
-                worker = Worker(workforce=self, **worker_data_copy)
-                # Note: Worker's __post_init__ will automatically add itself to this workforce
+                worker = Worker(**worker_data_copy)
+                self.add_worker(worker)
                 
         except FileNotFoundError:
             print(f"File {filename} not found. Starting with empty workforce.")
