@@ -43,7 +43,7 @@ with st.form("add_worker_form"):
     new_end_date = st.date_input("End Date")
     new_work_days = st.multiselect("Working Days", options=DAYS_OF_WEEK, default=["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"])
     new_work_hours = st.number_input("Hours Per Day", min_value=1.0, max_value=24.0, value=9.0, step=0.5)
-    new_payment = st.text_input("Payment")
+    new_payment = st.number_input("Payment", min_value = 0.0, step = .5)
     submitted = st.form_submit_button("Add Worker")
     if submitted:
         if new_name and new_work_hours and new_work_days and new_payment:
@@ -87,7 +87,7 @@ else:
                 step=0.5,
                 key=f'update_work_hours_{i}'
             )
-            new_payment = st.text_input("Payment", value=worker.payment, key=f'update_payment_{i}')
+            new_payment = st.number_input("Payment", min_value = 0.0, step = .5, value=float(worker.payment), key=f'update_payment_{i}')
             col1, col2 = st.columns(2)
             with col1:
                 if st.button("Update", key=f"update_{i}"):
@@ -108,4 +108,4 @@ else:
                     st.session_state.workforce.remove_worker(worker.name)
                     save_workforce()
                     st.warning(f"Removed worker {worker.name}")
-                    st.rerun()
+                    st.rerun()  # Force rerun to refresh the worker list
