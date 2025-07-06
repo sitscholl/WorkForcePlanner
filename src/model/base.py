@@ -43,7 +43,7 @@ class BasePredictor(ABC):
         """Return a new instance of the model for cross-validation."""
         pass
 
-    def train(self, data, target_column, feature_columns, categorical_columns=None, 
+    def train(self, data, target_column, feature_columns, 
               cv_method='simple_split', cv_params=None, random_state=42):
         """
         Train the model on the provided data with flexible cross-validation and with categorical variable support.
@@ -52,7 +52,6 @@ class BasePredictor(ABC):
             data (pd.DataFrame): The training data
             target_column (str): Name of the target column (working hours)
             feature_columns (list): List of feature column names to use as predictors
-            categorical_columns (list): List of categorical column names (subset of feature_columns)
             cv_method (str): Cross-validation method:
                 - 'simple_split': Traditional train-test split
                 - 'kfold': K-fold cross-validation
@@ -66,23 +65,20 @@ class BasePredictor(ABC):
             dict: Training metrics including cross-validation results
         """
 
-        if data[[target_column] + feature_columns + categorical_columns].isna().any().any():
+        if data[[target_column] + feature_columns].isna().any().any():
             raise ValueError("Data contains missing values")
-        
-        if isinstance(categorical_columns, str):
-            categorical_columns = [categorical_columns]
-        
+                
         # Store column information
         self.target_column = target_column
         self.feature_columns = feature_columns
-        self.categorical_columns = categorical_columns or []
+        self.categorical_columns = [i for i in feature_columns if data[i].dtype == 'object']
         self.numerical_columns = [col for col in feature_columns if col not in self.categorical_columns]
         
         # Initialize model
         self._init_model()
         
         # Prepare data
-        # data_clean = data.dropna(subset=[target_column] + feature_columns + categorical_columns)
+        # data_clean = data.dropna(subset=[target_column] + feature_columns)
         X_encoded, y = self._prepare_data(data, fit_encoders=True)
                         
         # Set default cv_params if not provided
@@ -368,7 +364,7 @@ class BasePredictor(ABC):
         if not self.is_trained:
             raise ValueError("Model must be trained before making predictions")
         
-        # data_clean = data.dropna(subset=[self.target_column] + self.feature_columns + self.categorical_columns)
+        # data_clean = data.dropna(subset=[self.target_column] + self.feature_columns)
         X_encoded, _ = self._prepare_data(data, fit_encoders=False)
 
         # Ensure columns match training data (add missing columns as zeros, drop extras)
