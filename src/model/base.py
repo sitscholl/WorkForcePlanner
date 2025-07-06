@@ -66,6 +66,9 @@ class BasePredictor(ABC):
             dict: Training metrics including cross-validation results
         """
 
+        if data[[target_column] + feature_columns + categorical_columns].isna().any().any():
+            raise ValueError("Data contains missing values")
+        
         if isinstance(categorical_columns, str):
             categorical_columns = [categorical_columns]
         
@@ -79,8 +82,8 @@ class BasePredictor(ABC):
         self._init_model()
         
         # Prepare data
-        data_clean = data.dropna(subset=[target_column] + feature_columns + categorical_columns)
-        X_encoded, y = self._prepare_data(data_clean, fit_encoders=True)
+        # data_clean = data.dropna(subset=[target_column] + feature_columns + categorical_columns)
+        X_encoded, y = self._prepare_data(data, fit_encoders=True)
                         
         # Set default cv_params if not provided
         if cv_params is None:
@@ -94,7 +97,7 @@ class BasePredictor(ABC):
         elif cv_method == 'leave_one_out':
             self._leave_one_out_validation(X_encoded, y)
         elif cv_method == 'group_kfold':
-            self._group_kfold_validation(X_encoded, y, data_clean, cv_params, random_state)
+            self._group_kfold_validation(X_encoded, y, data, cv_params, random_state)
         elif cv_method == 'time_series':
             self._time_series_validation(X_encoded, y, cv_params)
         else:
@@ -365,8 +368,8 @@ class BasePredictor(ABC):
         if not self.is_trained:
             raise ValueError("Model must be trained before making predictions")
         
-        data_clean = data.dropna(subset=[self.target_column] + self.feature_columns + self.categorical_columns)
-        X_encoded, _ = self._prepare_data(data_clean, fit_encoders=False)
+        # data_clean = data.dropna(subset=[self.target_column] + self.feature_columns + self.categorical_columns)
+        X_encoded, _ = self._prepare_data(data, fit_encoders=False)
 
         # Ensure columns match training data (add missing columns as zeros, drop extras)
         X_encoded = X_encoded.reindex(columns=self.encoded_feature_names, fill_value=0)
