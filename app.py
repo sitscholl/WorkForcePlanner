@@ -1,9 +1,12 @@
 import streamlit as st
 
 from pathlib import Path
+from datetime import datetime
 
 from src.config import load_config
 from src.utils import load_data_and_train_model, load_workforce
+from src.planner.scheduler import schedule_field_work
+from src.plot import create_timeline_chart
 
 # --- Load configuration ---
 if 'config' not in st.session_state:
@@ -21,9 +24,13 @@ workforce_file = Path(st.session_state.config['workforce_file'])
 if 'workforce' not in st.session_state:
     st.session_state.workforce = load_workforce(workforce_file)
 
-# --- Predict working hours ---
-st.session_state.data['predicted_hours'] = st.session_state.predictor.predict(st.session_state.data)
+schedule_df = schedule_field_work(
+        field_table=st.session_state.data,
+        workforce=st.session_state.workforce,
+        start_date=datetime(2025, 9, 1, 8, 0),
+        field_order_column='Field',
+        hours_column='predicted_hours'
+        )
 
-# --- Calculate start and end days ---
-
-# --- Display Timeline ---
+timeline_fig = create_timeline_chart(schedule_df, datetime(2025, 9, 10, 10, 0))
+st.plotly_chart(timeline_fig, use_container_width=True)
