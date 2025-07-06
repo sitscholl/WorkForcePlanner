@@ -23,6 +23,8 @@ def load_data_and_train_model(config):
         cv_params=config['model']['cv_params']
     )
 
+    field_data_clean['predicted_hours'] = predictor.predict(field_data_clean)
+
     return predictor, field_data_clean
 
 def load_workforce(workforce_file):
