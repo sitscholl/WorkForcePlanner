@@ -56,9 +56,9 @@ def schedule_field_work(field_table, workforce, start_date, field_order_column='
         
         field_end = round_to_nearest_hour(current_datetime)
         results.append({
-            'field_name': field_name,
-            'start_datetime': field_start,
-            'end_datetime': field_end,
+            'Field': field_name,
+            'start_date': field_start,
+            'end_date': field_end,
             'total_hours': required_hours
         })
         print(f"Finished field {field_name} on {field_end}")
