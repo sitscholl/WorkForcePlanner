@@ -65,6 +65,10 @@ class BasePredictor(ABC):
         Returns:
             dict: Training metrics including cross-validation results
         """
+
+        if isinstance(categorical_columns, str):
+            categorical_columns = [categorical_columns]
+        
         # Store column information
         self.target_column = target_column
         self.feature_columns = feature_columns
@@ -75,7 +79,7 @@ class BasePredictor(ABC):
         self._init_model()
         
         # Prepare data
-        data_clean = data.dropna(subset=[target_column] + feature_columns)
+        data_clean = data.dropna(subset=[target_column] + feature_columns + categorical_columns)
         X_encoded, y = self._prepare_data(data_clean, fit_encoders=True)
                         
         # Set default cv_params if not provided
@@ -361,13 +365,16 @@ class BasePredictor(ABC):
         if not self.is_trained:
             raise ValueError("Model must be trained before making predictions")
         
-        X = data[self.feature_columns].copy()
-        X = X.fillna(X.mean())
+        data_clean = data.dropna(subset=[self.target_column] + self.feature_columns + self.categorical_columns)
+        X_encoded, _ = self._prepare_data(data_clean, fit_encoders=False)
+
+        # Ensure columns match training data (add missing columns as zeros, drop extras)
+        X_encoded = X_encoded.reindex(columns=self.encoded_feature_names, fill_value=0)
         
         if self.scaler is not None:
-            X_scaled = self.scaler.transform(X)
+            X_scaled = self.scaler.transform(X_encoded)
         else:
-            X_scaled = X
+            X_scaled = X_encoded
         
         predictions = self.model.predict(X_scaled)
         return predictions
