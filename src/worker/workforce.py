@@ -27,6 +27,25 @@ class Workforce:
                 return
         raise ValueError(f"Worker with name '{name}' not found in the workforce.")
 
+    def get_daily_work_hours(self, date):
+        total_hours = 0
+        for worker in self.workers:
+            total_hours += worker.get_daily_work_hours(date)
+        return total_hours
+
+    def get_daily_worker_count(self, date):
+        workers_on_date = []
+        for worker in self.workers:
+            if worker.get_daily_work_hours(date) > 0:
+                workers_on_date.append(worker)
+        
+        if len(workers_on_date) == 0:
+            return 0
+            
+        max_hours_on_date = max([i.work_hours for i in workers_on_date])
+        worker_count = sum([i.work_hours / max_hours_on_date for i in workers_on_date])
+        return worker_count
+
     def save(self, filename='workers.yaml'):
         # Convert Pydantic models to dictionaries, excluding the workforce field
         workers_data = [worker.model_dump(exclude={'workforce'}) for worker in self.workers]

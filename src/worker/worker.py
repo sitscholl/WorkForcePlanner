@@ -19,3 +19,9 @@ class Worker(BaseModel):
         if self.start_date >= self.end_date:
             raise ValueError("Start date must be before end date")
         return self
+
+    def get_daily_work_hours(self, date):
+        if self.start_date.date() <= date <= self.end_date.date():
+            return self.work_hours
+        return 0
+
