@@ -4,22 +4,11 @@ from pathlib import Path
 
 from src.worker import Worker, Workforce
 
-WORKFORCE_FILE = Path("workforce.yaml")
 DAYS_OF_WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-
-# --- Load workforce from file on startup ---
-def load_workforce():
-    if WORKFORCE_FILE.exists():
-        workforce = Workforce()
-        workforce.load(filename = WORKFORCE_FILE)
-        return workforce
-    return Workforce()
-
-if 'workforce' not in st.session_state:
-    st.session_state.workforce = load_workforce()
+workforce_file = Path(st.session_state.config['workforce_file'])
 
 def save_workforce():
-    st.session_state.workforce.save(WORKFORCE_FILE)
+    st.session_state.workforce.save(workforce_file)
 
 def get_workers():
     return st.session_state.workforce.get_workers()
@@ -30,15 +19,15 @@ st.title("Workforce Management")
 st.header("Persistence")
 uploaded_file = st.file_uploader("Load Workforce from YAML", type=["yaml", "yml"])
 if uploaded_file is not None:
-    with open(WORKFORCE_FILE, "wb") as f:
+    with open(workforce_file, "wb") as f:
         f.write(uploaded_file.read())
-    st.session_state.workforce = Workforce.load(filename = WORKFORCE_FILE)
+    st.session_state.workforce = Workforce.load(filename = workforce_file)
     st.success("Workforce loaded from YAML!")
     save_workforce()
 
 # --- Download current workforce ---
-if WORKFORCE_FILE.exists():
-    with open(WORKFORCE_FILE, "rb") as f:
+if workforce_file.exists():
+    with open(workforce_file, "rb") as f:
         st.download_button(
             label="Download Current Workforce YAML",
             data=f,

@@ -1,11 +1,8 @@
-
 import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-from src.data import GoogleSheetsHandler
-from src.config import load_config, load_model_class
 
 # Page configuration
 st.set_page_config(
@@ -34,39 +31,9 @@ st.markdown("""
 st.title("📊 Model Performance Dashboard")
 st.markdown("---")
 
-# Initialize components
-@st.cache_data
-def load_data_and_train_model():
-    config = load_config('config.yaml')
-    model = load_model_class(config)
-
-    gsheets = GoogleSheetsHandler()
-    gsheets.setup_credentials_from_file('gsheets_creds.json')
-    field_data = gsheets.run(
-        spreadsheet_url=config['gsheets']['spreadsheet_url'], 
-        worksheet_name=config['gsheets']['worksheet_name']
-    )
-
-    field_data_clean = field_data.dropna(subset=[config['model']['target']] + config['model']['predictors'])
-
-    predictor = model()
-    metrics = predictor.train(
-        data=field_data_clean,
-        target_column=config['model']['target'],
-        feature_columns=config['model']['predictors'],
-        cv_method=config['model']['cv_method'],
-        cv_params=config['model']['cv_params']
-    )
-
-    return predictor, field_data_clean, config
-
-# Load data and train model
-with st.spinner("Loading data and training model..."):
-    predictor, data, config = load_data_and_train_model()
-
 # Get metrics and feature importance
-metrics = predictor.get_metrics()
-feature_importance = predictor.get_feature_importance()
+metrics = st.session_state.predictor.get_metrics()
+feature_importance = st.session_state.predictor.get_feature_importance()
 
 # Main dashboard layout
 col1, col2, col3 = st.columns([2, 2, 1])
@@ -132,10 +99,10 @@ with col3:
     st.subheader("ℹ️ Model Info")
 
     # Model configuration details
-    st.markdown(f"**Target Variable:** {config['model']['target']}")
-    st.markdown(f"**CV Method:** {config['model']['cv_method']}")
-    st.markdown(f"**Features:** {len(config['model']['predictors'])}")
-    st.markdown(f"**Data Points:** {len(data)}")
+    st.markdown(f"**Target Variable:** {st.session_state.config['model']['target']}")
+    st.markdown(f"**CV Method:** {st.session_state.config['model']['cv_method']}")
+    st.markdown(f"**Features:** {len(st.session_state.config['model']['predictors'])}")
+    st.markdown(f"**Data Points:** {len(st.session_state.data)}")
 
 # Data overview section
 st.markdown("---")
@@ -145,15 +112,15 @@ col1, col2 = st.columns([1, 1])
 
 with col1:
     st.markdown("**Dataset Summary**")
-    st.dataframe(data.describe(), use_container_width=True)
+    st.dataframe(st.session_state.data.describe(), use_container_width=True)
 
 with col2:
     st.markdown("**Target Variable Distribution**")
     fig = px.histogram(
-        data, 
-        x=config['model']['target'],
+        st.session_state.data, 
+        x=st.session_state.config['model']['target'],
         nbins=30,
-        title=f"Distribution of {config['model']['target']}"
+        title=f"Distribution of {st.session_state.config['model']['target']}"
     )
     fig.update_layout(height=300)
     st.plotly_chart(fig, use_container_width=True)
