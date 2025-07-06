@@ -17,8 +17,14 @@ COLUMN_MAPPING = {
     "Wiese": "Field",
     "Sorte": "Variety",
     "Jahr": "Year",
-    "_Zupfen [h]": "Hours Zupfen",
-    "_Ernte [h]": "Hours Ernte"
+    "Pflanzalter": "Tree Age",
+    "Baumhöhe": "Tree Height",
+    "Vor Zupfen [n/Wiese]": "Count Zupfen",
+    "Nach Zupfen [n/Wiese]": "Count Ernte",
+    "Zupfen [h]": "Hours Zupfen",
+    "Ernte [h]": "Hours Ernte",
+    #"_Zupfen [h]": "_Hours Zupfen",
+    #"_Ernte [h]": "_Hours Ernte"
 }
 
 class GoogleSheetsHandler(BaseRawDataPipeline):
@@ -36,10 +42,10 @@ class GoogleSheetsHandler(BaseRawDataPipeline):
                        
             # Rename columns to standard names
             df = df.rename(columns=COLUMN_MAPPING)
-            df = df[["Field","Variety","Year","Hours Zupfen","Hours Ernte"]].copy()
+            df = df[list(COLUMN_MAPPING.values())].copy()
 
             #Transform to numeric
-            for col in ['Hours Zupfen', 'Hours Ernte']:
+            for col in ['Tree Height', 'Hours Zupfen', 'Hours Ernte', 'Count Zupfen', 'Count Ernte']:
                 df[col] = pd.to_numeric(df[col])
                         
             # Remove rows with invalid data

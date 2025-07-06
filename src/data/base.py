@@ -37,6 +37,10 @@ class BaseRawDataPipeline(ABC):
                 "Field": pa.Column(str),
                 "Variety": pa.Column(str),
                 "Year": pa.Column(int, pa.Check.ge(0)),
+                "Tree Age": pa.Column(int),
+                "Tree Height": pa.Column(float, nullable=True),
+                "Count Zupfen": pa.Column(float, nullable=True),
+                "Count Ernte": pa.Column(float, nullable=True),
                 "Hours Zupfen": pa.Column(float, nullable=True),
                 "Hours Ernte": pa.Column(float, nullable=True)
             },
