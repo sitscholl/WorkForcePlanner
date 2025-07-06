@@ -1,4 +1,6 @@
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, model_validator
+
+import datetime
 
 # from .workforce import Workforce
 
@@ -6,11 +8,14 @@ class Worker(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
     
     name: str
+    start_date: datetime.datetime
+    end_date: datetime.datetime
     work_hours: float
     work_days: list[str]
-    # workforce: Workforce
-    payment: int | None = Field(default = None)
+    payment: float | None = Field(default = None)
 
-    # def model_post_init(self, __context):
-    #     """Called after model initialization - Pydantic equivalent of __post_init__"""
-    #     self.workforce.add_worker(self)
+    @model_validator(mode = 'after')
+    def validate_dates(self):
+        if self.start_date >= self.end_date:
+            raise ValueError("Start date must be before end date")
+        return self
