@@ -1,0 +1,13 @@
+gsheets:
+  credentials_file: gsheets_creds.json
+  spreadsheet_url: https://docs.google.com/spreadsheets/d/1l8lHoWk1VBZ0tzLOQ6JXGxVbD7B37CIN2xbysK_JDCA/edit
+  worksheet_name: Wiesen
+
+model:
+  class: src.model.linear_regression.LinearRegressionPredictor
+  target: "Hours Zupfen"
+  predictors: ['Variety', 'Tree Age', 'Count Zupfen']
+  cv_method: group_kfold
+  cv_params:
+    group_column: Year
+    n_splits: -1

@@ -1,4 +1,5 @@
 workforce.yaml
+gsheets_creds.json
 
 # Python-generated files
 __pycache__/
