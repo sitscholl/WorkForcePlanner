@@ -18,24 +18,26 @@ if __name__ == '__main__':
 
     import matplotlib.pyplot as plt
     from ..data.gsheets import GoogleSheetsHandler
+    from ..config import load_config
+
+    config = load_config('config.yaml')
 
     gsheets = GoogleSheetsHandler()
     gsheets.setup_credentials_from_file('gsheets_creds.json')
     field_data = gsheets.run(
-        spreadsheet_url = "https://docs.google.com/spreadsheets/d/1l8lHoWk1VBZ0tzLOQ6JXGxVbD7B37CIN2xbysK_JDCA/edit", 
-        worksheet_name = "Wiesen"
+        spreadsheet_url = config['gsheets']['spreadsheet_url'], 
+        worksheet_name = config['gsheets']['worksheet_name']
         )
 
-    field_data_clean = field_data.dropna(subset=['Hours Zupfen', 'Variety', 'Tree Age', 'Count Zupfen'])
+    field_data_clean = field_data.dropna(subset=[config['model']['target']] + config['model']['predictors'])
 
     predictor = RandomForestPredictor()
     metrics = predictor.train(
         data=field_data_clean,
-        target_column='Hours Zupfen',
-        feature_columns=['Variety', "Tree Age", 'Count Zupfen'],
-        categorical_columns=['Variety'],
-        cv_method='group_kfold',
-        cv_params={'group_column': 'Year', 'n_splits': -1}
+        target_column=config['model']['target'],
+        feature_columns=config['model']['predictors'],
+        cv_method=config['model']['cv_method'],
+        cv_params=config['model']['cv_params']
     )
     # print(predictor.get_feature_importance())
     # print(predictor.get_metrics())
@@ -46,7 +48,7 @@ if __name__ == '__main__':
     field_data_clean['predictions'] = predictor.predict(field_data_clean)
     print(field_data_clean)
 
-    plt.plot(field_data_clean['Hours Zupfen'], field_data_clean['predictions'], 'o')
+    plt.plot(field_data_clean[config['model']['target']], field_data_clean['predictions'], 'o')
     plt.axline((0,0), slope=1, color = 'red')
     plt.xlabel('Actual Hours')
     plt.ylabel('Predicted Hours')
