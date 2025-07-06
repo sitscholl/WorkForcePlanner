@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from sklearn.model_selection import (
     train_test_split, LeaveOneOut, 
     GroupKFold, TimeSeriesSplit, KFold
@@ -11,14 +12,26 @@ from abc import ABC, abstractmethod
 warnings.filterwarnings('ignore')
 
 class BasePredictor(ABC):
-    def __init__(self):
+    def __init__(self, categorical_encoding='onehot'):
+        """
+        Initialize the predictor with specified model type and encoding method.
+        
+        Args:
+            model_type (str): Either 'linear' or 'random_forest'
+            categorical_encoding (str): Either 'onehot' or 'label'
+        """
+        self.categorical_encoding = categorical_encoding
         self.model = None
         self.scaler = None
+        self.categorical_encoders = {}  # Store encoders for each categorical column
         self.feature_columns = None
+        self.categorical_columns = None
+        self.numerical_columns = None
         self.target_column = None
         self.is_trained = False
         self.metrics = {}
         self.cv_results = {}
+        self.encoded_feature_names = None  # Store final feature names after encoding
 
     @abstractmethod
     def _init_model(self):
@@ -30,15 +43,16 @@ class BasePredictor(ABC):
         """Return a new instance of the model for cross-validation."""
         pass
 
-    def train(self, data, target_column, feature_columns, 
+    def train(self, data, target_column, feature_columns, categorical_columns=None, 
               cv_method='simple_split', cv_params=None, random_state=42):
         """
-        Train the model on the provided data with flexible cross-validation.
+        Train the model on the provided data with flexible cross-validation and with categorical variable support.
         
         Args:
             data (pd.DataFrame): The training data
             target_column (str): Name of the target column (working hours)
             feature_columns (list): List of feature column names to use as predictors
+            categorical_columns (list): List of categorical column names (subset of feature_columns)
             cv_method (str): Cross-validation method:
                 - 'simple_split': Traditional train-test split
                 - 'kfold': K-fold cross-validation
@@ -54,49 +68,131 @@ class BasePredictor(ABC):
         # Store column information
         self.target_column = target_column
         self.feature_columns = feature_columns
+        self.categorical_columns = categorical_columns or []
+        self.numerical_columns = [col for col in feature_columns if col not in self.categorical_columns]
+        
+        # Initialize model
+        self._init_model()
         
         # Prepare data
         data_clean = data.dropna(subset=[target_column] + feature_columns)
-        X = data_clean[feature_columns].copy()
-        y = data_clean[target_column].copy()
-        
-        # Handle missing values
-        # X = X.fillna(X.mean())
-        # y = y.fillna(y.mean())
-        
+        X_encoded, y = self._prepare_data(data_clean, fit_encoders=True)
+                        
         # Set default cv_params if not provided
         if cv_params is None:
             cv_params = {}
         
         # Perform cross-validation based on method
         if cv_method == 'simple_split':
-            self._simple_split_validation(X, y, cv_params, random_state)
+            self._simple_split_validation(X_encoded, y, cv_params, random_state)
         elif cv_method == 'kfold':
-            self._kfold_validation(X, y, cv_params, random_state)
+            self._kfold_validation(X_encoded, y, cv_params, random_state)
         elif cv_method == 'leave_one_out':
-            self._leave_one_out_validation(X, y)
+            self._leave_one_out_validation(X_encoded, y)
         elif cv_method == 'group_kfold':
-            self._group_kfold_validation(X, y, data_clean, cv_params, random_state)
+            self._group_kfold_validation(X_encoded, y, data_clean, cv_params, random_state)
         elif cv_method == 'time_series':
-            self._time_series_validation(X, y, cv_params)
+            self._time_series_validation(X_encoded, y, cv_params)
         else:
             raise ValueError(f"Unknown cv_method: {cv_method}")
         
         # Train final model on all data
         if self.scaler is not None:
-            X_scaled = self.scaler.fit_transform(X)
+            X_scaled = self.scaler.fit_transform(X_encoded)
         else:
-            X_scaled = X
+            X_scaled = X_encoded
         
         self.model.fit(X_scaled, y)
         
         # Add feature importance for random forest
-        if self.model_type == 'random_forest':
+        if hasattr(self.model, 'feature_importances_'):
             feature_importance = dict(zip(feature_columns, self.model.feature_importances_))
             self.metrics['feature_importance'] = feature_importance
         
         self.is_trained = True
         return self.metrics
+
+    def _prepare_data(self, data, fit_encoders=False):
+        """
+        Prepare data by encoding categorical variables and handling missing values.
+        
+        Args:
+            data (pd.DataFrame): Input data
+            fit_encoders (bool): Whether to fit the encoders (True for training, False for prediction)
+            
+        Returns:
+            tuple: (X_encoded, y) where X_encoded is the processed feature matrix
+        """
+        # Extract target
+        if self.target_column not in data.columns:
+            raise ValueError(f"Target column '{self.target_column}' not found in data")
+        y = data[self.target_column].copy()
+        
+        # Handle numerical columns
+        if not all(col in data.columns for col in self.numerical_columns):
+            raise ValueError(f"Not all numerical columns {self.numerical_columns} found in data")
+        X_numerical = data[self.numerical_columns].copy()
+        
+        # Handle categorical columns
+        X_categorical_encoded = pd.DataFrame()
+        
+        for col in self.categorical_columns:
+            if col not in data.columns:
+                raise ValueError(f"Categorical column '{col}' not found in data")
+            
+            # Fill missing values with mode or 'Unknown'
+            col_data = data[col].fillna('Unknown')
+            
+            if fit_encoders:
+                # Fit and transform during training
+                if self.categorical_encoding == 'onehot':
+                    encoder = OneHotEncoder(sparse_output=False, handle_unknown='ignore')
+                    encoded_data = encoder.fit_transform(col_data.values.reshape(-1, 1))
+                    
+                    # Create column names
+                    feature_names = [f"{col}_{category}" for category in encoder.categories_[0]]
+                    encoded_df = pd.DataFrame(encoded_data, columns=feature_names, index=data.index)
+                    
+                elif self.categorical_encoding == 'label':
+                    encoder = LabelEncoder()
+                    encoded_data = encoder.fit_transform(col_data)
+                    encoded_df = pd.DataFrame({col: encoded_data}, index=data.index)
+                    feature_names = [col]
+                
+                self.categorical_encoders[col] = encoder
+                
+            else:
+                # Transform using fitted encoders during prediction
+                encoder = self.categorical_encoders[col]
+                
+                if self.categorical_encoding == 'onehot':
+                    encoded_data = encoder.transform(col_data.values.reshape(-1, 1))
+                    feature_names = [f"{col}_{category}" for category in encoder.categories_[0]]
+                    encoded_df = pd.DataFrame(encoded_data, columns=feature_names, index=data.index)
+                    
+                elif self.categorical_encoding == 'label':
+                    # Handle unknown categories in label encoding
+                    encoded_data = []
+                    for value in col_data:
+                        try:
+                            encoded_data.append(encoder.transform([value])[0])
+                        except ValueError:
+                            # Unknown category, assign -1 or most frequent class
+                            encoded_data.append(-1)
+                    
+                    encoded_df = pd.DataFrame({col: encoded_data}, index=data.index)
+                    feature_names = [col]
+            
+            X_categorical_encoded = pd.concat([X_categorical_encoded, encoded_df], axis=1)
+        
+        # Combine numerical and categorical features
+        X_encoded = pd.concat([X_numerical, X_categorical_encoded], axis=1)
+        
+        # Store feature names for later use
+        if fit_encoders:
+            self.encoded_feature_names = list(X_encoded.columns)
+                
+        return X_encoded, y
     
     def _simple_split_validation(self, X, y, cv_params, random_state):
         """Traditional train-test split validation."""
@@ -175,6 +271,8 @@ class BasePredictor(ABC):
         r2_scores = []
         mse_scores = []
         mae_scores = []
+        predictions_all = []
+        actuals_all = []
         
         cv_iterator = cv.split(X, y, groups) if groups is not None else cv.split(X, y)
         
@@ -195,33 +293,68 @@ class BasePredictor(ABC):
             temp_model = self._get_model_copy()
             temp_model.fit(X_train_scaled, y_train_fold)
             y_pred = temp_model.predict(X_test_scaled)
+
+            # Store predictions and actuals for overall metrics
+            predictions_all.extend(y_pred)
+            actuals_all.extend(y_test_fold.values)
             
-            # Calculate metrics
-            r2_scores.append(r2_score(y_test_fold, y_pred))
+            # Calculate fold-specific metrics
             mse_scores.append(mean_squared_error(y_test_fold, y_pred))
             mae_scores.append(mean_absolute_error(y_test_fold, y_pred))
+
+            # Only calculate R² if we have more than one sample in the test fold
+            if len(y_test_fold) > 1:
+                r2_fold = r2_score(y_test_fold, y_pred)
+                r2_scores.append(r2_fold)
+            # For single samples, we'll calculate overall R² later
+
+        # Convert to numpy arrays for easier handling
+        predictions_all = np.array(predictions_all)
+        actuals_all = np.array(actuals_all)
+        
+        # Calculate overall metrics across all predictions
+        overall_r2 = r2_score(actuals_all, predictions_all)
+        overall_mse = mean_squared_error(actuals_all, predictions_all)
+        overall_mae = mean_absolute_error(actuals_all, predictions_all)
         
         # Store cross-validation results
         self.cv_results = {
-            'r2_scores': r2_scores,
-            'mse_scores': mse_scores,
-            'mae_scores': mae_scores,
-            'n_folds': len(r2_scores)
+            'fold_mse_scores': mse_scores,
+            'fold_mae_scores': mae_scores,
+            'fold_r2_scores': r2_scores if r2_scores else None,  # None if no fold had >1 sample
+            'overall_predictions': predictions_all,
+            'overall_actuals': actuals_all,
+            'n_folds': len(mse_scores)
         }
         
         # Calculate summary metrics
         self.metrics = {
             'cv_method': cv_method_name,
-            'cv_r2_mean': np.mean(r2_scores),
-            'cv_r2_std': np.std(r2_scores),
             'cv_mse_mean': np.mean(mse_scores),
             'cv_mse_std': np.std(mse_scores),
             'cv_mae_mean': np.mean(mae_scores),
             'cv_mae_std': np.std(mae_scores),
-            'cv_r2_scores': r2_scores,
+            'overall_r2': overall_r2,  # R² calculated on all predictions vs actuals
+            'overall_mse': overall_mse,
+            'overall_mae': overall_mae,
             'cv_mse_scores': mse_scores,
             'cv_mae_scores': mae_scores
         }
+
+        # Add fold-wise R² statistics only if available
+        if r2_scores:
+            self.metrics.update({
+                'cv_r2_mean': np.mean(r2_scores),
+                'cv_r2_std': np.std(r2_scores),
+                'cv_r2_scores': r2_scores
+            })
+        else:
+            # For methods like Leave-One-Out, we only have overall R²
+            self.metrics.update({
+                'cv_r2_mean': overall_r2,
+                'cv_r2_std': None,  # Can't calculate std from single overall value
+                'cv_r2_scores': None
+            })
         
     def predict(self, data):
         """Make predictions on new data."""
@@ -255,8 +388,30 @@ class BasePredictor(ABC):
         """Get feature importance (only for random forest)."""
         if not self.is_trained:
             raise ValueError("Model must be trained first")
-        
-        if self.model_type != 'random_forest':
-            raise ValueError("Feature importance only available for random forest model")
-        
+                
         return self.metrics.get('feature_importance', {})
+
+    def get_variety_impact(self):
+        """
+        Get the impact of different apple varieties (only for one-hot encoded random forest).
+        
+        Returns:
+            dict: Variety impacts sorted by importance
+        """
+        if not self.is_trained:
+            raise ValueError("Model must be trained first")
+        
+        if self.model_type != 'random_forest' or self.categorical_encoding != 'onehot':
+            raise ValueError("Variety impact analysis only available for random forest with one-hot encoding")
+        
+        feature_importance = self.metrics.get('feature_importance', {})
+        
+        # Extract variety-related features
+        variety_impacts = {}
+        for feature_name, importance in feature_importance.items():
+            if 'Variety_' in feature_name:
+                variety = feature_name.replace('Variety_', '')
+                variety_impacts[variety] = importance
+        
+        # Sort by importance
+        return dict(sorted(variety_impacts.items(), key=lambda x: x[1], reverse=True))
