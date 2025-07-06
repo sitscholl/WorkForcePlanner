@@ -1,3 +1,5 @@
+workforce_file: 'workforce.yaml'
+
 gsheets:
   credentials_file: gsheets_creds.json
   spreadsheet_url: https://docs.google.com/spreadsheets/d/1l8lHoWk1VBZ0tzLOQ6JXGxVbD7B37CIN2xbysK_JDCA/edit
