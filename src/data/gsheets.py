@@ -14,7 +14,7 @@ GOOGLE_SHEETS_SCOPES = [
 ]
 
 COLUMN_MAPPING = {
-    "Wiese": "Field",
+    "Wiesenabschnitt": "Field",
     "Sorte": "Variety",
     "Jahr": "Year",
     "Pflanzalter": "Tree Age",
