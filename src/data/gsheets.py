@@ -3,11 +3,10 @@ import pandas as pd
 from google.oauth2.service_account import Credentials
 import streamlit as st
 
-from typing import Optional, Dict, List, Tuple
-import json
+from typing import Optional, Dict
 import os
 
-from src.data.base import BaseRawDataPipeline
+from .base import BaseRawDataPipeline
 
 GOOGLE_SHEETS_SCOPES = [
     'https://www.googleapis.com/auth/spreadsheets.readonly',
