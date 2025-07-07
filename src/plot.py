@@ -106,3 +106,57 @@ def create_timeline_chart(schedule_df: pd.DataFrame, current_date: datetime.date
     )
     
     return fig
+
+def create_predictions_scatterplot(
+        df, 
+        obs_col='Observed', 
+        pred_col='Predicted', 
+        field_col='Field', 
+        year_col='Year'
+    ):
+    """
+    Plots observed vs predicted values using Plotly, with a 1:1 reference line.
+    Hovering over points shows Field and Year.
+    
+    Parameters:
+        df (pd.DataFrame): DataFrame containing the data.
+        obs_col (str): Name of the observed values column.
+        pred_col (str): Name of the predicted values column.
+        field_col (str): Name of the field column.
+        year_col (str): Name of the year column.
+    """
+    # Scatter plot
+    scatter = go.Scatter(
+        x=df[obs_col],
+        y=df[pred_col],
+        mode='markers',
+        marker=dict(size=8, color='blue', opacity=0.7),
+        text=[f"Field: {f}<br>Year: {y}" for f, y in zip(df[field_col], df[year_col])],
+        hovertemplate=(
+            f"{obs_col}: %{{x}}<br>"
+            f"{pred_col}: %{{y}}<br>"
+            "%{text}<extra></extra>"
+        ),
+        name='Data'
+    )
+    
+    # 1:1 line
+    min_val = min(df[obs_col].min(), df[pred_col].min())
+    max_val = max(df[obs_col].max(), df[pred_col].max())
+    line = go.Scatter(
+        x=[min_val, max_val],
+        y=[min_val, max_val],
+        mode='lines',
+        line=dict(color='red', dash='dash'),
+        name='1:1 Line'
+    )
+    
+    layout = go.Layout(
+        title='Observed vs Predicted',
+        xaxis=dict(title=obs_col),
+        yaxis=dict(title=pred_col),
+        showlegend=True
+    )
+    
+    fig = go.Figure(data=[scatter, line], layout=layout)
+    return fig

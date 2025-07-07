@@ -2,8 +2,9 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-from src.app_state import load_config, load_and_clean_data, get_trained_model
+from src.app_state import load_config, load_and_clean_data, get_trained_model, get_predictions
 from src.ui_components import render_parameter_selection
+from src.plot import create_predictions_scatterplot
 
 # Page configuration
 st.set_page_config(
@@ -33,8 +34,9 @@ param_name, year, start_date = render_parameter_selection()
 
 # --- Load  ---
 config = load_config("config.yaml")
-data_raw, data_clean = load_and_clean_data(config, st.session_state['param_name'])
-model = get_trained_model(config, st.session_state['param_name'], data_clean)
+data_raw, data_clean = load_and_clean_data(config, param_name)
+model = get_trained_model(config, param_name, data_clean)
+predictions = get_predictions(config, param_name, model, data_raw, year)
 
 # Header
 st.title("📊 Model Performance Dashboard")
@@ -108,9 +110,9 @@ with col3:
     st.subheader("ℹ️ Model Info")
 
     # Model configuration details
-    st.markdown(f"**Target Variable:** {config[st.session_state.param_name]['target']}")
-    st.markdown(f"**CV Method:** {config[st.session_state.param_name]['cv_method']}")
-    st.markdown(f"**Features:** {len(config[st.session_state.param_name]['predictors'])}")
+    st.markdown(f"**Target Variable:** {config[param_name]['target']}")
+    st.markdown(f"**CV Method:** {config[param_name]['cv_method']}")
+    st.markdown(f"**Features:** {len(config[param_name]['predictors'])}")
     st.markdown(f"**Data Points:** {len(data_clean)}")
 
 # Data overview section
@@ -127,9 +129,9 @@ with col2:
     st.markdown("**Target Variable Distribution**")
     fig = px.histogram(
         data_clean, 
-        x=config[st.session_state.param_name]['target'],
+        x=config[param_name]['target'],
         nbins=30,
-        title=f"Distribution of {config[st.session_state.param_name]['target']}"
+        title=f"Distribution of {config[param_name]['target']}"
     )
     fig.update_layout(height=300)
     st.plotly_chart(fig, use_container_width=True)
@@ -160,3 +162,12 @@ if 'cv_scores' in metrics:
     )
     fig.update_layout(height=400)
     st.plotly_chart(fig, use_container_width=True)
+
+model_scatterplot = create_predictions_scatterplot(
+    predictions, 
+    obs_col = config[param_name]['target'],
+    pred_col = 'predicted_hours',
+    field_col = 'Field',
+    year_col = 'Year'
+)
+st.plotly_chart(model_scatterplot, use_container_width=True)
