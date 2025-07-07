@@ -1,8 +1,8 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 
+from src.app_state import load_config, load_and_clean_data, get_trained_model
 
 # Page configuration
 st.set_page_config(
@@ -27,13 +27,18 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# --- Load  ---
+config = load_config("config.yaml")
+data_raw, data_clean = load_and_clean_data(config, st.session_state['param_name'])
+model = get_trained_model(config, st.session_state['param_name'], data_clean)
+
 # Header
 st.title("📊 Model Performance Dashboard")
 st.markdown("---")
 
 # Get metrics and feature importance
-metrics = st.session_state.predictor.get_metrics()
-feature_importance = st.session_state.predictor.get_feature_importance()
+metrics = model.get_metrics()
+feature_importance = model.get_feature_importance()
 
 # Main dashboard layout
 col1, col2, col3 = st.columns([2, 2, 1])
@@ -99,10 +104,10 @@ with col3:
     st.subheader("ℹ️ Model Info")
 
     # Model configuration details
-    st.markdown(f"**Target Variable:** {st.session_state.config[st.session_state.param_name]['target']}")
-    st.markdown(f"**CV Method:** {st.session_state.config[st.session_state.param_name]['cv_method']}")
-    st.markdown(f"**Features:** {len(st.session_state.config[st.session_state.param_name]['predictors'])}")
-    st.markdown(f"**Data Points:** {len(st.session_state.data)}")
+    st.markdown(f"**Target Variable:** {config[st.session_state.param_name]['target']}")
+    st.markdown(f"**CV Method:** {config[st.session_state.param_name]['cv_method']}")
+    st.markdown(f"**Features:** {len(config[st.session_state.param_name]['predictors'])}")
+    st.markdown(f"**Data Points:** {len(data_clean)}")
 
 # Data overview section
 st.markdown("---")
@@ -112,15 +117,15 @@ col1, col2 = st.columns([1, 1])
 
 with col1:
     st.markdown("**Dataset Summary**")
-    st.dataframe(st.session_state.data.describe(), use_container_width=True)
+    st.dataframe(data_clean.describe(), use_container_width=True)
 
 with col2:
     st.markdown("**Target Variable Distribution**")
     fig = px.histogram(
-        st.session_state.data, 
-        x=st.session_state.config[st.session_state.param_name]['target'],
+        data_clean, 
+        x=config[st.session_state.param_name]['target'],
         nbins=30,
-        title=f"Distribution of {st.session_state.config[st.session_state.param_name]['target']}"
+        title=f"Distribution of {config[st.session_state.param_name]['target']}"
     )
     fig.update_layout(height=300)
     st.plotly_chart(fig, use_container_width=True)

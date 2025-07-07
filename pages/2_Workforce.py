@@ -2,16 +2,15 @@ import streamlit as st
 
 from pathlib import Path
 
+from src.app_state import load_config, load_workforce
 from src.worker import Worker, Workforce
 
 DAYS_OF_WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-workforce_file = Path(st.session_state.config['workforce_file'])
 
-def save_workforce():
-    st.session_state.workforce.save(workforce_file)
-
-def get_workers():
-    return st.session_state.workforce.get_workers()
+# --- Load  ---
+config = load_config("config.yaml")
+workforce = load_workforce(config)
+workforce_file = Path(config['workforce_file'])
 
 st.title("Workforce Management")
 
@@ -21,9 +20,9 @@ uploaded_file = st.file_uploader("Load Workforce from YAML", type=["yaml", "yml"
 if uploaded_file is not None:
     with open(workforce_file, "wb") as f:
         f.write(uploaded_file.read())
-    st.session_state.workforce = Workforce.load(filename = workforce_file)
+    workforce = Workforce.load(filename = workforce_file)
     st.success("Workforce loaded from YAML!")
-    save_workforce()
+    workforce.save(workforce_file)
 
 # --- Download current workforce ---
 if workforce_file.exists():
@@ -55,8 +54,8 @@ with st.form("add_worker_form"):
                 work_days = new_work_days, 
                 payment=new_payment, 
             )
-            st.session_state.workforce.add_worker(worker)
-            save_workforce()
+            workforce.add_worker(worker)
+            workforce.save(workforce_file)
             st.success(f"Added worker: {new_name}")
             st.rerun()  # Force rerun to refresh the worker list
         else:
@@ -64,7 +63,7 @@ with st.form("add_worker_form"):
 
 # --- List and Modify Workers ---
 st.header("Current Workforce")
-workers = get_workers()
+workers = workforce.get_workers()
 if not workers:
     st.info("No workers in the workforce.")
 else:
@@ -99,13 +98,13 @@ else:
                         work_days=new_work_days,
                         payment=new_payment,
                     )
-                    st.session_state.workforce.update_worker(worker.name, updated_worker)
-                    save_workforce()
+                    workforce.update_worker(worker.name, updated_worker)
+                    workforce.save(workforce_file)
                     st.success(f"Updated worker {worker.name}")
                     st.rerun()  # Force rerun to refresh the worker list
             with col2:
                 if st.button("Remove", key=f"remove_{i}"):
-                    st.session_state.workforce.remove_worker(worker.name)
-                    save_workforce()
+                    workforce.remove_worker(worker.name)
+                    workforce.save(workforce_file)
                     st.warning(f"Removed worker {worker.name}")
                     st.rerun()  # Force rerun to refresh the worker list
