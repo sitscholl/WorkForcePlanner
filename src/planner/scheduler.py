@@ -1,5 +1,5 @@
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import date, time, datetime, timedelta
 
 def schedule_field_work(field_table, workforce, start_date, field_order_column='field_name', hours_column='total_hours'):
     """
@@ -17,8 +17,12 @@ def schedule_field_work(field_table, workforce, start_date, field_order_column='
     """
     field_table = field_table.copy()
     results = []
+
+    if isinstance(start_date, date):
+        start_date = datetime.combine(start_date, time(hour = 8))
     current_datetime = start_date
     current_date = current_datetime.date()
+
     remaining_daily_capacity = workforce.get_daily_work_hours(current_date)
     daily_worker_count = workforce.get_daily_worker_count(current_date)
     
