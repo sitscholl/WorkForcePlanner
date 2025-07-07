@@ -99,9 +99,9 @@ with col3:
     st.subheader("ℹ️ Model Info")
 
     # Model configuration details
-    st.markdown(f"**Target Variable:** {st.session_state.config['model']['target']}")
-    st.markdown(f"**CV Method:** {st.session_state.config['model']['cv_method']}")
-    st.markdown(f"**Features:** {len(st.session_state.config['model']['predictors'])}")
+    st.markdown(f"**Target Variable:** {st.session_state.config[st.session_state.param_name]['target']}")
+    st.markdown(f"**CV Method:** {st.session_state.config[st.session_state.param_name]['cv_method']}")
+    st.markdown(f"**Features:** {len(st.session_state.config[st.session_state.param_name]['predictors'])}")
     st.markdown(f"**Data Points:** {len(st.session_state.data)}")
 
 # Data overview section
@@ -118,9 +118,9 @@ with col2:
     st.markdown("**Target Variable Distribution**")
     fig = px.histogram(
         st.session_state.data, 
-        x=st.session_state.config['model']['target'],
+        x=st.session_state.config[st.session_state.param_name]['target'],
         nbins=30,
-        title=f"Distribution of {st.session_state.config['model']['target']}"
+        title=f"Distribution of {st.session_state.config[st.session_state.param_name]['target']}"
     )
     fig.update_layout(height=300)
     st.plotly_chart(fig, use_container_width=True)

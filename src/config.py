@@ -11,10 +11,10 @@ def load_config(file):
     except Exception as e:
         st.error(f"Error reading config file: {str(e)}")
 
-def load_model_class(config):
+def load_model_class(config, param_name):
     try:
         # Get the full class path
-        class_path = config['model']['class']
+        class_path = config[param_name]['class']
 
         # Split module path and class name
         module_path, class_name = class_path.rsplit('.', 1)
