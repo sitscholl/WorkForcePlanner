@@ -8,6 +8,10 @@ from src.plot import create_timeline_chart
 from src.ui_components import render_parameter_selection
 
 # --- Select Parameters ---
+##TODO: Store these parameter values to a file and reload on every restart to make them persistent.
+## In sub-pages reload the parameters from the file to match those on the main page
+##Use the on_change argument with a function that writes the parameter value to a file immediately after change
+##and then load the values via a function in the Load section
 param_name, year, start_date = render_parameter_selection()
 
 # --- Load  ---
