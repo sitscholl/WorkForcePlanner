@@ -3,6 +3,7 @@ import pandas as pd
 import plotly.express as px
 
 from src.app_state import load_config, load_and_clean_data, get_trained_model
+from src.ui_components import render_parameter_selection
 
 # Page configuration
 st.set_page_config(
@@ -26,6 +27,9 @@ st.markdown("""
     }
 </style>
 """, unsafe_allow_html=True)
+
+# --- Select Parameters ---
+param_name, year, start_date = render_parameter_selection()
 
 # --- Load  ---
 config = load_config("config.yaml")

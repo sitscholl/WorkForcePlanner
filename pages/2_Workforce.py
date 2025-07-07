@@ -4,8 +4,12 @@ from pathlib import Path
 
 from src.app_state import load_config, load_workforce
 from src.worker import Worker, Workforce
+from src.ui_components import render_parameter_selection
 
 DAYS_OF_WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+
+# --- Select Parameters ---
+param_name, year, start_date = render_parameter_selection()
 
 # --- Load  ---
 config = load_config("config.yaml")
