@@ -2,30 +2,36 @@ from .data import GoogleSheetsHandler
 from .config import load_model_class
 from .worker import Workforce
 
-def load_data_and_train_model(config, param_name):
-    model = load_model_class(config, param_name)
-
+def load_data(config, param_name):
     gsheets = GoogleSheetsHandler()
-    gsheets.setup_credentials_from_file('gsheets_creds.json')
+    gsheets.setup_credentials_from_file(config['gsheets']['credentials_file'])
     field_data = gsheets.run(
         spreadsheet_url=config['gsheets']['spreadsheet_url'], 
         worksheet_name=config['gsheets']['worksheet_name']
     )
 
-    field_data_clean = field_data.dropna(subset=[config[param_name]['target']] + config[param_name]['predictors'])
+    return field_data
 
+def clean_data(data, config, param_name, include_target = True):
+    if include_target:
+        return data.dropna(subset=[config[param_name]['target']] + config[param_name]['predictors'])
+    else:
+        return data.dropna(subset=config[param_name]['predictors'])
+    
+
+def train_model(config, param_name, data):
+
+    model = load_model_class(config, param_name)
     predictor = model()
     _ = predictor.train(
-        data=field_data_clean,
+        data=data,
         target_column=config[param_name]['target'],
         feature_columns=config[param_name]['predictors'],
         cv_method=config[param_name]['cv_method'],
         cv_params=config[param_name]['cv_params']
     )
 
-    field_data_clean['predicted_hours'] = predictor.predict(field_data_clean)
-
-    return predictor, field_data_clean
+    return predictor
 
 def load_workforce(workforce_file):
     if workforce_file.exists():
