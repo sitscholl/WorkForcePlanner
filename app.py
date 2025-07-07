@@ -46,7 +46,13 @@ data_to_predict = st.session_state.data_raw.loc[st.session_state.data_raw['Year'
 data_to_predict = clean_data(data_to_predict, st.session_state.config, param_name, include_target=False)
 if data_to_predict.empty:
     st.error('No data available for the selected year.')
-data_to_predict['predicted_hours'] = st.session_state.predictor.predict(data_to_predict)
+    st.stop()
+
+try:
+    data_to_predict['predicted_hours'] = st.session_state.predictor.predict(data_to_predict)
+except Exception as e:
+    st.error(f"Error during prediction: {str(e)}")
+    st.stop()
 st.session_state.data_to_predict = data_to_predict
 
 # --- Load workforce ---
