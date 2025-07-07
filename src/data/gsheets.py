@@ -116,7 +116,7 @@ class GoogleSheetsHandler(BaseRawDataPipeline):
             
             self.client = gspread.authorize(self.credentials)
 
-            st.success('Loaded gsheets credentials from file!')
+            # st.success('Loaded gsheets credentials from file!')
             
         except Exception as e:
             st.error(f"Error setting up credentials from file: {str(e)}")
