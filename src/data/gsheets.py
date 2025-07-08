@@ -19,6 +19,7 @@ COLUMN_MAPPING = {
     "Jahr": "Year",
     "Pflanzalter": "Tree Age",
     "Baumhöhe": "Tree Height",
+    "Pflückgänge": "Harvest rounds",
     "Vor Zupfen [n/Wiese]": "Count Zupfen",
     "Nach Zupfen [n/Wiese]": "Count Ernte",
     "Zupfen [h]": "Hours Zupfen",

@@ -39,6 +39,7 @@ class BaseRawDataPipeline(ABC):
                 "Year": pa.Column(int, pa.Check.ge(0)),
                 "Tree Age": pa.Column(int),
                 "Tree Height": pa.Column(float, nullable=True),
+                "Harvest rounds": pa.Column(int, nullable=True),
                 "Count Zupfen": pa.Column(float, nullable=True),
                 "Count Ernte": pa.Column(float, nullable=True),
                 "Hours Zupfen": pa.Column(float, nullable=True),
