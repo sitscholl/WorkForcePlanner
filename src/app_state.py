@@ -7,15 +7,27 @@ from pathlib import Path
 from .data import GoogleSheetsHandler
 from .worker import Workforce
 
+CONFIG_PATH = "config.yaml"
+
 @st.cache_data
 def load_config(file):
     try:
-        with open(file, 'r') as f:
+        with open(file, 'r', encoding = 'utf-8') as f:
             config = yaml.safe_load(f)
         return config
     except Exception as e:
         st.error(f"Error reading config file: {str(e)}")
         st.stop()
+
+def save_config(config, file) -> bool:
+    """Save configuration to YAML file"""
+    try:
+        with open(file, 'w', encoding = 'utf-8') as f:
+            yaml.dump(config, f, default_flow_style=False, sort_keys=False)
+        return True
+    except Exception as e:
+        st.error(f"Error saving configuration: {str(e)}")
+        return False
 
 def load_workforce(config):
     
