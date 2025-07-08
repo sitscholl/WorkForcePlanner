@@ -46,7 +46,7 @@ class GoogleSheetsHandler(BaseRawDataPipeline):
             df = df[list(COLUMN_MAPPING.values())].copy()
 
             #Transform to numeric
-            for col in ['Tree Height', 'Hours Zupfen', 'Hours Ernte', 'Count Zupfen', 'Count Ernte']:
+            for col in ['Tree Height', 'Hours Zupfen', 'Hours Ernte', 'Count Zupfen', 'Count Ernte', "Harvest rounds"]:
                 df[col] = pd.to_numeric(df[col])
                         
             # Remove rows with invalid data
