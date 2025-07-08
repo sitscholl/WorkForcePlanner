@@ -66,7 +66,7 @@ class GoogleSheetsHandler(BaseRawDataPipeline):
         try:
             if self.client is None:
                 st.error("Google Sheets client not initialized")
-                return None
+                st.stop()
             
             # Extract spreadsheet ID from URL if needed
             if 'docs.google.com' in spreadsheet_url:
@@ -94,7 +94,7 @@ class GoogleSheetsHandler(BaseRawDataPipeline):
                 
         except Exception as e:
             st.error(f"Error loading data from Google Sheets: {str(e)}")
-            return None
+            st.stop()
             
     def setup_credentials_from_file(self, credentials_file: str) -> bool:
         """
@@ -108,7 +108,8 @@ class GoogleSheetsHandler(BaseRawDataPipeline):
         """
         try:
             if not os.path.exists(credentials_file):
-                return False
+                st.error(f"Credentials file '{credentials_file}' does not exist.")
+                st.stop()
                 
             self.credentials = Credentials.from_service_account_file(
                 credentials_file, scopes=GOOGLE_SHEETS_SCOPES
@@ -134,7 +135,8 @@ class GoogleSheetsHandler(BaseRawDataPipeline):
         """
         try:
             if self.client is None:
-                return None
+                st.error("Google Sheets client not initialized")
+                st.stop()
             
             # Extract spreadsheet ID from URL if needed
             if 'docs.google.com' in spreadsheet_url:
