@@ -26,5 +26,11 @@ schedule_df = schedule_field_work(
         hours_column='predicted_hours'
         )
 
+st.markdown('---')
+st.subheader("📆 Labour Timeline")
 timeline_fig = create_timeline_chart(schedule_df, datetime.now())
 st.plotly_chart(timeline_fig, use_container_width=True)
+
+st.markdown('---')
+st.subheader("💾 Fields Data")
+st.dataframe(schedule_df)
