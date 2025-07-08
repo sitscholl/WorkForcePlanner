@@ -3,6 +3,7 @@ import yaml
 import importlib
 
 from pathlib import Path
+import datetime
 
 from .data import GoogleSheetsHandler
 from .worker import Workforce
@@ -14,6 +15,8 @@ def load_config(file):
     try:
         with open(file, 'r', encoding = 'utf-8') as f:
             config = yaml.safe_load(f)
+            if isinstance(config['start_date'], str):
+                config['start_date'] = datetime.datetime.strptime(config['start_date'], "%Y-%m-%d")
         return config
     except Exception as e:
         st.error(f"Error reading config file: {str(e)}")
