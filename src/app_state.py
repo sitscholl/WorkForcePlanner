@@ -82,9 +82,12 @@ def get_trained_model(config, param_name, data):
 
     return predictor
 
-def get_predictions(config, param_name, model, data, year):
+def get_predictions(config, param_name, model, data, year: int = None):
 
-    data_to_predict = data.loc[data['Year'] == year]
+    if year is not None:
+        data_to_predict = data.copy().loc[data['Year'] == year]
+    else:
+        data_to_predict = data.copy()
     data_to_predict = clean_data(data_to_predict, config, param_name, include_target=False)
 
     if data_to_predict.empty:

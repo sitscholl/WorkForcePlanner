@@ -36,7 +36,7 @@ param_name, year, start_date = render_parameter_selection()
 config = load_config("config.yaml")
 data_raw, data_clean = load_and_clean_data(config, param_name)
 model = get_trained_model(config, param_name, data_clean)
-predictions = get_predictions(config, param_name, model, data_raw, year)
+predictions = get_predictions(config, param_name, model, data_raw)
 
 # Header
 st.title("📊 Model Performance Dashboard")
