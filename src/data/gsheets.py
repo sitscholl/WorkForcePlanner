@@ -19,6 +19,7 @@ COLUMN_MAPPING = {
     "Jahr": "Year",
     "Pflanzalter": "Tree Age",
     "Baumhöhe": "Tree Height",
+    "Pflückgänge": "Harvest rounds",
     "Vor Zupfen [n/Wiese]": "Count Zupfen",
     "Nach Zupfen [n/Wiese]": "Count Ernte",
     "Zupfen [h]": "Hours Zupfen",
@@ -45,7 +46,7 @@ class GoogleSheetsHandler(BaseRawDataPipeline):
             df = df[list(COLUMN_MAPPING.values())].copy()
 
             #Transform to numeric
-            for col in ['Tree Height', 'Hours Zupfen', 'Hours Ernte', 'Count Zupfen', 'Count Ernte']:
+            for col in ['Tree Height', 'Hours Zupfen', 'Hours Ernte', 'Count Zupfen', 'Count Ernte', "Harvest rounds"]:
                 df[col] = pd.to_numeric(df[col])
                         
             # Remove rows with invalid data
@@ -66,7 +67,7 @@ class GoogleSheetsHandler(BaseRawDataPipeline):
         try:
             if self.client is None:
                 st.error("Google Sheets client not initialized")
-                return None
+                st.stop()
             
             # Extract spreadsheet ID from URL if needed
             if 'docs.google.com' in spreadsheet_url:
@@ -94,7 +95,7 @@ class GoogleSheetsHandler(BaseRawDataPipeline):
                 
         except Exception as e:
             st.error(f"Error loading data from Google Sheets: {str(e)}")
-            return None
+            st.stop()
             
     def setup_credentials_from_file(self, credentials_file: str) -> bool:
         """
@@ -108,7 +109,8 @@ class GoogleSheetsHandler(BaseRawDataPipeline):
         """
         try:
             if not os.path.exists(credentials_file):
-                return False
+                st.error(f"Credentials file '{credentials_file}' does not exist.")
+                st.stop()
                 
             self.credentials = Credentials.from_service_account_file(
                 credentials_file, scopes=GOOGLE_SHEETS_SCOPES
@@ -134,7 +136,8 @@ class GoogleSheetsHandler(BaseRawDataPipeline):
         """
         try:
             if self.client is None:
-                return None
+                st.error("Google Sheets client not initialized")
+                st.stop()
             
             # Extract spreadsheet ID from URL if needed
             if 'docs.google.com' in spreadsheet_url:

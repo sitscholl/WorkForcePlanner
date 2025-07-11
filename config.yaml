@@ -1,26 +1,29 @@
-workforce_file: 'workforce.yaml'
-
+param_name: Ernte
+year: 2025
+start_date: '2025-09-01'
+workforce_file: workforce.yaml
 gsheets:
   credentials_file: gsheets_creds.json
   spreadsheet_url: https://docs.google.com/spreadsheets/d/1l8lHoWk1VBZ0tzLOQ6JXGxVbD7B37CIN2xbysK_JDCA/edit
   worksheet_name: Wiesen
-
-scheduling:
-  year: 2025
-
 Zupfen:
   class: src.model.linear_regression.LinearRegressionPredictor
-  target: "Hours Zupfen"
-  predictors: ['Variety', 'Tree Age', 'Count Zupfen']
+  target: Hours Zupfen
+  predictors:
+  - Variety
+  - Tree Age
+  - Count Zupfen
   cv_method: group_kfold
   cv_params:
     group_column: Year
     n_splits: -1
-
 Ernte:
   class: src.model.linear_regression.LinearRegressionPredictor
-  target: "Hours Ernte"
-  predictors: ['Variety', 'Count Ernte']
+  target: Hours Ernte
+  predictors:
+  - Variety
+  - Harvest rounds
+  - Count Ernte
   cv_method: group_kfold
   cv_params:
     group_column: Year

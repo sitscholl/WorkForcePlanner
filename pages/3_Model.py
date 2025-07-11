@@ -3,13 +3,13 @@ import pandas as pd
 import plotly.express as px
 
 from src.app_state import load_config, load_and_clean_data, get_trained_model, get_predictions
-from src.ui_components import render_parameter_selection
+from src.ui_components import render_sidebar
 from src.plot import create_predictions_scatterplot
 
 # Page configuration
 st.set_page_config(
     page_title="Model Performance Dashboard",
-    page_icon="📊",
+    page_icon="ud83dudcca",
     layout="wide"
 )
 
@@ -29,17 +29,19 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- Select Parameters ---
-param_name, year, start_date = render_parameter_selection()
-
 # --- Load  ---
 config = load_config("config.yaml")
+
+# --- Render Sidebar ---
+render_sidebar(config)
+
+param_name = config['param_name']
 data_raw, data_clean = load_and_clean_data(config, param_name)
 model = get_trained_model(config, param_name, data_clean)
 predictions = get_predictions(config, param_name, model, data_raw)
 
 # Header
-st.title("📊 Model Performance Dashboard")
+st.title("🎯 Model Performance Dashboard")
 st.markdown("---")
 
 # Get metrics and feature importance
@@ -110,6 +112,9 @@ with col3:
     st.subheader("ℹ️ Model Info")
 
     # Model configuration details
+    st.markdown(f"**Target Variable:** {config[param_name]['target']}")
+    st.markdown(f"**CV Method:** {config[param_name]['cv_method']}")
+    st.markdown(f"**Features:** {len(config[param_name]['predictors'])}")
     st.markdown(f"**Target Variable:** {config[param_name]['target']}")
     st.markdown(f"**CV Method:** {config[param_name]['cv_method']}")
     st.markdown(f"**Features:** {len(config[param_name]['predictors'])}")

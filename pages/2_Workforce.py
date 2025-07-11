@@ -4,19 +4,22 @@ from pathlib import Path
 
 from src.app_state import load_config, load_workforce
 from src.worker import Worker, Workforce
-from src.ui_components import render_parameter_selection
+from src.ui_components import render_sidebar
 
 DAYS_OF_WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
-# --- Select Parameters ---
-param_name, year, start_date = render_parameter_selection()
+# Set page title
+st.set_page_config(page_title="Workforce Management", page_icon="👥")
+st.title("Workforce Management")
 
 # --- Load  ---
 config = load_config("config.yaml")
+
+# --- Render Sidebar ---
+render_sidebar(config)
+
 workforce = load_workforce(config)
 workforce_file = Path(config['workforce_file'])
-
-st.title("Workforce Management")
 
 # --- Manual Load from Uploaded YAML (overwrites current) ---
 st.header("Persistence")
