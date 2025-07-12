@@ -59,3 +59,50 @@ def render_sidebar(config):
         # Add a link to the settings page
         st.divider()
         st.write("Need to change settings? [Go to Settings Page](/Settings)")
+
+
+def field_order_interface(field_names):
+    """
+    Create an interface for reordering field priorities
+    
+    Args:
+        field_names: List of field names
+        
+    Returns:
+        List[str]: Reordered field names
+    """
+    
+    st.subheader("Field Priority Order")
+    st.write("Drag and drop to reorder fields by priority (top = first to work on):")
+       
+    # Use session state to maintain order
+    if 'field_order' not in st.session_state:
+        st.session_state.field_order = field_names.copy()
+    
+    # Display current order with move up/down buttons
+    for i, field in enumerate(st.session_state.field_order):
+        col1, col2, col3, col4 = st.columns([0.1, 0.6, 0.15, 0.15], gap = 'small')
+        
+        with col1:
+            st.write(f"{i+1}.")
+        
+        with col2:
+            st.write(field)
+        
+        with col3:
+            if i > 0:
+                if st.button("↑", key=f"up_{i}"):
+                    # Move up
+                    st.session_state.field_order[i], st.session_state.field_order[i-1] = \
+                        st.session_state.field_order[i-1], st.session_state.field_order[i]
+                    st.rerun()
+        
+        with col4:
+            if i < len(st.session_state.field_order) - 1:
+                if st.button("↓", key=f"down_{i}"):
+                    # Move down
+                    st.session_state.field_order[i], st.session_state.field_order[i+1] = \
+                        st.session_state.field_order[i+1], st.session_state.field_order[i]
+                    st.rerun()
+    
+    return st.session_state.field_order.copy()

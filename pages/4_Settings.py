@@ -1,10 +1,10 @@
 import streamlit as st
 import yaml
-
 import datetime
+import pandas as pd
 
-from src.app_state import save_config, load_config, CONFIG_PATH
-from src.ui_components import render_sidebar
+from src.app_state import save_config, load_config, load_data, CONFIG_PATH
+from src.ui_components import render_sidebar, field_order_interface
 
 # Set page title
 st.set_page_config(page_title="Settings", page_icon="⚙️")
@@ -14,11 +14,15 @@ st.write("Configure application settings and save them to config.yaml")
 # Load current configuration
 config = load_config(CONFIG_PATH)
 
+# Initialize fields_config if it doesn't exist
+if "fields_config" not in config:
+    config["fields_config"] = {}
+
 # Render sidebar
 render_sidebar(config)
 
 # Create tabs for different configuration sections
-tabs = st.tabs(["General", "Google Sheets", "Models"])
+tabs = st.tabs(["General", "Google Sheets", "Models", "Fields"])
 
 # General settings tab
 with tabs[0]:
@@ -39,7 +43,7 @@ with tabs[0]:
         start_date_str = start_date_str.strftime("%Y-%m-%d")
     start_date = st.date_input(
         "Start Date",
-        value=None if not start_date_str else start_date_str.split(" ")[0],
+        value=None if not start_date_str else datetime.datetime.strptime(start_date_str.split(" ")[0], "%Y-%m-%d"),
         help="The start date for scheduling"
     )
     config["start_date"] = str(start_date)
@@ -91,7 +95,7 @@ with tabs[2]:
     st.header("Model Configuration")
     
     # Create subtabs for each model
-    model_names = [key for key in config.keys() if key not in ["year", "start_date", "workforce_file", "gsheets", "param_name"]]
+    model_names = [key for key in config.keys() if key not in ["year", "start_date", "workforce_file", "gsheets", "param_name", "fields_config"]]
     
     if not model_names:
         st.warning("No model configurations found in config.yaml")
@@ -164,28 +168,91 @@ with tabs[2]:
                     help="Number of splits for cross-validation (-1 for leave-one-out)"
                 )
 
-# Add new model section
-st.header("Add New Model")
-new_model_name = st.text_input("New Model Name", key="new_model_name")
-add_model = st.button("Add Model")
+    # Add new model section
+    st.header("Add New Model")
+    new_model_name = st.text_input("New Model Name", key="new_model_name")
+    add_model = st.button("Add Model")
 
-if add_model and new_model_name:
-    if new_model_name in config:
-        st.error(f"Model '{new_model_name}' already exists!")
-    else:
-        # Create a new model configuration with default values
-        config[new_model_name] = {
-            "class": "src.model.linear_regression.LinearRegressionPredictor",
-            "target": f"Hours {new_model_name}",
-            "predictors": ["Variety", "Count"],
-            "cv_method": "group_kfold",
-            "cv_params": {
-                "group_column": "Year",
-                "n_splits": 5
+    if add_model and new_model_name:
+        if new_model_name in config:
+            st.error(f"Model '{new_model_name}' already exists!")
+        else:
+            # Create a new model configuration with default values
+            config[new_model_name] = {
+                "class": "src.model.linear_regression.LinearRegressionPredictor",
+                "target": f"Hours {new_model_name}",
+                "predictors": ["Variety", "Count"],
+                "cv_method": "group_kfold",
+                "cv_params": {
+                    "group_column": "Year",
+                    "n_splits": 5
+                }
             }
-        }
-        st.success(f"Model '{new_model_name}' added! Please save changes to persist.")
-        st.experimental_rerun()
+            st.success(f"Model '{new_model_name}' added! Please save changes to persist.")
+            st.experimental_rerun()
+
+# Fields configuration tab (NEW)
+with tabs[3]:
+    st.header("Fields Configuration")
+    
+    # Try to load field data to get the list of fields
+    try:
+        with st.spinner("Loading field data..."):
+            field_data = load_data(config)
+            if field_data is not None and not field_data.empty:
+                # Get unique field names
+                field_names = field_data["Field"].unique().tolist()
+                
+                # Initialize field order if not already in config
+                if "field_order" not in config["fields_config"]:
+                    config["fields_config"]["field_order"] = field_names
+                else:
+                    # Add any new fields that might not be in the current order
+                    for field in field_names:
+                        if field not in config["fields_config"]["field_order"]:
+                            config["fields_config"]["field_order"].append(field)
+                
+                new_field_order = field_order_interface(config["fields_config"]["field_order"])
+                config["fields_config"]["field_order"] = new_field_order
+                                    
+                st.subheader("Field-Specific Settings")
+                
+                # Create tabs for each field
+                field_tabs = st.tabs(field_names)
+                
+                for i, field_name in enumerate(field_names):
+                    with field_tabs[i]:
+                        st.write(f"Configure settings for: **{field_name}**")
+                        
+                        # Initialize field-specific config if not exists
+                        if field_name not in config["fields_config"]:
+                            config["fields_config"][field_name] = {}
+                        
+                        # Get field data for this specific field
+                        field_specific_data = field_data[field_data["Field"] == field_name]
+                        
+                        # Harvest rounds setting
+                        default_rounds = 1
+                        if not field_specific_data.empty and "Harvest rounds" in field_specific_data.columns:
+                            # Use the most recent year's value as default
+                            latest_year_data = field_specific_data.sort_values("Year", ascending=False).iloc[0]
+                            if "Harvest rounds" in latest_year_data and not pd.isna(latest_year_data["Harvest rounds"]):
+                                default_rounds = int(latest_year_data["Harvest rounds"])
+                        
+                        # Use the configured value if it exists, otherwise use the default
+                        config["fields_config"][field_name]["harvest_rounds"] = st.number_input(
+                            "Harvest Rounds",
+                            min_value=1,
+                            max_value=10,
+                            value=int(config["fields_config"][field_name].get("harvest_rounds", default_rounds)),
+                            key=f"{field_name}_harvest_rounds",
+                            help="Number of harvest rounds for this field"
+                        )
+                        
+            else:
+                st.warning("No field data available.")
+    except Exception as e:
+        st.error(f"Error loading field data: {str(e)}")
 
 # Save changes button
 st.header("Save Changes")
