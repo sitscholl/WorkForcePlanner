@@ -1,7 +1,8 @@
 import pandas as pd
+import streamlit as st
 from datetime import date, time, datetime, timedelta
 
-def schedule_field_work(field_table, workforce, start_date, field_order_column='field_name', hours_column='total_hours', harvest_round_column = 'Harvest Round'):
+def schedule_field_work(field_table, workforce, start_date, field_order_column='field_name', hours_column='total_hours', harvest_round_column='Harvest Round'):
     """
     Schedule field work based on available workforce hours.
     
@@ -19,13 +20,14 @@ def schedule_field_work(field_table, workforce, start_date, field_order_column='
     results = []
 
     if isinstance(start_date, date):
-        start_date = datetime.combine(start_date, time(hour = 8))
+        start_date = datetime.combine(start_date, time(hour=8))
     current_datetime = start_date
     current_date = current_datetime.date()
 
     remaining_daily_capacity = workforce.get_daily_work_hours(current_date)
     daily_worker_count = workforce.get_daily_worker_count(current_date)
     
+    # The field_table is already ordered according to the harvest_round_order from apply_fields_config
     for _, field_row in field_table.iterrows():
         field_name = field_row[field_order_column]
         required_hours = field_row[hours_column]
@@ -43,9 +45,9 @@ def schedule_field_work(field_table, workforce, start_date, field_order_column='
             if remaining_daily_capacity <= 0 or daily_worker_count == 0:
                 # No work capacity this day, move to next day
                 current_datetime = datetime.combine(current_date + timedelta(days=1), start_date.time())
-                #Safety exit to avoid infinit loop if no workers available anymore
+                # Safety exit to avoid infinite loop if no workers available anymore
                 if current_datetime.timetuple().tm_yday == 365:
-                    print('Could not finish all fields within the year.')
+                    st.warning('Could not finish all fields within the year. Please review the workforce or field requirements.')
                     return pd.DataFrame(results)
 
                 continue
@@ -67,7 +69,7 @@ def schedule_field_work(field_table, workforce, start_date, field_order_column='
             'total_hours': required_hours,
             'Harvest round': harvest_round
         })
-        print(f"Finished field {field_name} on {field_end}")
+        print(f"Finished field {field_name} (round {harvest_round}) on {field_end}")
 
         # Use rounded end time as start for next field
         current_datetime = field_end
@@ -95,7 +97,7 @@ if __name__ == '__main__':
     schedule_df = schedule_field_work(
         field_table=data,
         workforce=workforce,
-        start_date=datetime(2025, 9, 1, 8, 0),  # Start March 1st at 8 AM
+        start_date=datetime(2025, 9, 1, 8, 0),  # Start September 1st at 8 AM
         field_order_column='Field',
         hours_column='predicted_hours'
         )

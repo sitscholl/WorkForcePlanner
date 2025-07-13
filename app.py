@@ -46,3 +46,7 @@ st.plotly_chart(timeline_fig, use_container_width=True)
 st.markdown('---')
 st.subheader("💾 Fields Data")
 st.dataframe(schedule_df)
+
+st.markdown('---')
+with st.expander("Raw data"):
+        st.dataframe(data_raw.loc[data_raw['Year'] == config['year']])

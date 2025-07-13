@@ -14,29 +14,27 @@ def apply_fields_config(fields_table, fields_config):
     """
     # Create expanded table with rows for each harvest round
     expanded_rows = []
-
-    for field_name in fields_config.get('field_order', []):
-        # Get harvest rounds for this field, default to 1 if not configured
-        field_config = fields_config.get(field_name, {})
-        harvest_rounds = field_config.get('harvest_rounds', 1)
-        
-        # Ensure harvest_rounds is an integer
-        try:
-            harvest_rounds = int(harvest_rounds)
-        except (ValueError, TypeError):
-            harvest_rounds = 1
-        
-        # Get the field row from the original table
-        field_rows = fields_table[fields_table['Field'] == field_name]
-        
-        if field_rows.empty:
-            continue  # Skip if field not found in table
-        
-        # For each harvest round, create a copy of the field row
-        for round_num in range(1, harvest_rounds + 1):
+    
+    # Check if we have a custom harvest round order
+    if "harvest_round_order" in fields_config and fields_config["harvest_round_order"]:
+        # Use the custom harvest round order
+        for item in fields_config["harvest_round_order"]:
+            # Extract field name and round number from the item
+            field_name = item["field"]
+            round_num = item["round"]
+            harvest_rounds = max([i['round'] for i in fields_config["harvest_round_order"] if i['field'] == field_name])
+                
+            # Get the field row from the original table
+            field_rows = fields_table[fields_table['Field'] == field_name]
+            
+            if field_rows.empty:
+                continue  # Skip if field not found in table
+            
+            # Create a copy of the field row with the specified harvest round
             for _, field_row in field_rows.iterrows():
                 row_dict = field_row.to_dict()
                 row_dict['Harvest Round'] = round_num
+                row_dict['predicted_hours'] = row_dict['predicted_hours'] / harvest_rounds
                 expanded_rows.append(row_dict)
 
     # Create new dataframe with expanded rows

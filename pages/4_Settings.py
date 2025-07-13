@@ -3,7 +3,7 @@ import yaml
 import datetime
 
 from src.app_state import save_config, load_config, load_data, CONFIG_PATH
-from src.ui_components import render_sidebar, field_order_interface, field_specific_settings
+from src.ui_components import render_sidebar, field_order_interface, field_specific_settings, harvest_round_order_interface
 
 # Set page title
 st.set_page_config(page_title="Settings", page_icon="⚙️")
@@ -216,14 +216,16 @@ with tabs[3]:
                         if field not in config["fields_config"]["field_order"]:
                             config["fields_config"]["field_order"].append(field)
                 
-                new_field_order = field_order_interface(config["fields_config"]["field_order"])
-                config["fields_config"]["field_order"] = new_field_order
-                                    
-                st.subheader("Field-Specific Settings")
+                # Field-harvest round ordering interface
+                st.divider()
+                st.subheader("Field and Harvest Round Order")
+                st.write("Configure the order in which field harvest rounds will be scheduled.")
                 
-                # Create tabs for each field
+                harvest_round_order = harvest_round_order_interface(config["fields_config"])
+                config["fields_config"]["harvest_round_order"] = harvest_round_order
+                
+                # Update field-specific settings first to ensure harvest rounds are up to date
                 field_tabs = st.tabs(field_names)
-                
                 for i, field_name in enumerate(field_names):
                     with field_tabs[i]:
                         field_settings = field_specific_settings(field_name, config["fields_config"], field_data)

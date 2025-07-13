@@ -175,3 +175,124 @@ def field_specific_settings(field_name, fields_config, field_data):
     )
 
     return {'harvest_rounds': harvest_rounds}
+
+
+def harvest_round_order_interface(fields_config):
+    """
+    Create an interface for ordering all field-harvest round combinations
+    
+    Args:
+        fields_config (dict): Fields configuration dictionary
+        
+    Returns:
+        list: Ordered list of dictionaries with field and round keys
+    """
+    st.subheader("Harvest Round Order")
+    st.write("Drag and drop to reorder field harvest rounds (top = first to work on):")
+    
+    # Generate all field-harvest round combinations
+    field_harvest_combinations = []
+    for field_name, field_config in fields_config.items():
+        if field_name == 'field_order' or field_name == 'harvest_round_order':
+            continue
+            
+        harvest_rounds = field_config.get('harvest_rounds', 1)
+        try:
+            harvest_rounds = int(harvest_rounds)
+        except (ValueError, TypeError):
+            harvest_rounds = 1
+            
+        for round_num in range(1, harvest_rounds + 1):
+            field_harvest_combinations.append({"field": field_name, "round": round_num})
+    
+    # If no combinations, return empty list
+    if not field_harvest_combinations:
+        st.info("No field-harvest round combinations available.")
+        return []
+    
+    # Use session state to maintain order
+    if 'harvest_round_order' not in st.session_state:
+        # Check if there's an existing order in the config
+        if 'harvest_round_order' in fields_config and fields_config['harvest_round_order']:
+            # Convert existing order to the new dictionary format if needed
+            ordered_combinations = []
+            for item in fields_config['harvest_round_order']:
+                if isinstance(item, tuple) or isinstance(item, list):
+                    # Convert tuple/list to dict
+                    ordered_combinations.append({"field": item[0], "round": item[1]})
+                elif isinstance(item, dict) and "field" in item and "round" in item:
+                    # Already in the right format
+                    ordered_combinations.append(item)
+                else:
+                    # Skip invalid items
+                    continue
+            st.session_state.harvest_round_order = ordered_combinations
+        else:
+            # Initialize with current field order and consecutive harvest rounds
+            ordered_combinations = []
+            for field_name in fields_config.get('field_order', []):
+                if field_name in fields_config:
+                    harvest_rounds = fields_config[field_name].get('harvest_rounds', 1)
+                    try:
+                        harvest_rounds = int(harvest_rounds)
+                    except (ValueError, TypeError):
+                        harvest_rounds = 1
+                        
+                    for round_num in range(1, harvest_rounds + 1):
+                        ordered_combinations.append({"field": field_name, "round": round_num})
+            
+            # Add any combinations not in the current order
+            for combo in field_harvest_combinations:
+                if not any(existing["field"] == combo["field"] and existing["round"] == combo["round"] 
+                          for existing in ordered_combinations):
+                    ordered_combinations.append(combo)
+                    
+            st.session_state.harvest_round_order = ordered_combinations
+    
+    # Ensure all combinations are in session state
+    current_combo_set = {(item["field"], item["round"]) for item in st.session_state.harvest_round_order}
+    
+    for combo in field_harvest_combinations:
+        if (combo["field"], combo["round"]) not in current_combo_set:
+            st.session_state.harvest_round_order.append(combo)
+    
+    # Remove combinations that are no longer valid
+    valid_combo_set = {(item["field"], item["round"]) for item in field_harvest_combinations}
+    st.session_state.harvest_round_order = [
+        combo for combo in st.session_state.harvest_round_order 
+        if (combo["field"], combo["round"]) in valid_combo_set
+    ]
+    
+    # Display current order with move up/down buttons
+    for i, combo in enumerate(st.session_state.harvest_round_order):
+        field_name = combo["field"]
+        round_num = combo["round"]
+        
+        col1, col2, col3, col4, col5 = st.columns([0.1, 0.4, 0.2, 0.15, 0.15], gap='small')
+        
+        with col1:
+            st.write(f"{i+1}.")
+        
+        with col2:
+            st.write(field_name)
+            
+        with col3:
+            st.write(f"Round {round_num}")
+        
+        with col4:
+            if i > 0:
+                if st.button("↑", key=f"up_harvest_{i}"):
+                    # Move up
+                    st.session_state.harvest_round_order[i], st.session_state.harvest_round_order[i-1] = \
+                        st.session_state.harvest_round_order[i-1], st.session_state.harvest_round_order[i]
+                    st.rerun()
+        
+        with col5:
+            if i < len(st.session_state.harvest_round_order) - 1:
+                if st.button("↓", key=f"down_harvest_{i}"):
+                    # Move down
+                    st.session_state.harvest_round_order[i], st.session_state.harvest_round_order[i+1] = \
+                        st.session_state.harvest_round_order[i+1], st.session_state.harvest_round_order[i]
+                    st.rerun()
+    
+    return st.session_state.harvest_round_order.copy()
