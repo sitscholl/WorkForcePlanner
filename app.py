@@ -6,6 +6,7 @@ from src.app_state import load_config, load_workforce, load_and_clean_data, get_
 from src.planner.scheduler import schedule_field_work
 from src.plot import create_timeline_chart
 from src.ui_components import render_sidebar
+from src.planner.fields import apply_fields_config
 
 # Set page title
 st.set_page_config(page_title="Workforce Planner", page_icon="📊")
@@ -22,6 +23,7 @@ workforce = load_workforce(config)
 data_raw, data_clean = load_and_clean_data(config, config['param_name'])
 model = get_trained_model(config, config['param_name'], data_clean)
 predictions = get_predictions(config, config['param_name'], model, data_raw, config['year'])
+predictions_config = apply_fields_config(predictions, config["fields_config"])
 
 # --- Main Content ---
 st.header(f"Schedule for {config['year']}")
@@ -29,7 +31,7 @@ st.write(f"Using model: {config['param_name']}")
 
 # --- Schedule ---
 schedule_df = schedule_field_work(
-        field_table=predictions,
+        field_table=predictions_config,
         workforce=workforce,
         start_date=config['start_date'],
         field_order_column='Field',
