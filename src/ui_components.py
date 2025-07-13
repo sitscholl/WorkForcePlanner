@@ -1,4 +1,5 @@
 import streamlit as st
+import pandas as pd
 
 from datetime import datetime
 
@@ -72,12 +73,26 @@ def field_order_interface(field_names):
         List[str]: Reordered field names
     """
     
+    if not field_names:
+        st.info("No fields available to order.")
+        return []
+    
     st.subheader("Field Priority Order")
     st.write("Drag and drop to reorder fields by priority (top = first to work on):")
        
     # Use session state to maintain order
     if 'field_order' not in st.session_state:
         st.session_state.field_order = field_names.copy()
+    
+    # Ensure all fields from field_names are in session state
+    for field in field_names:
+        if field not in st.session_state.field_order:
+            st.session_state.field_order.append(field)
+    
+    # Remove fields that are no longer in field_names
+    st.session_state.field_order = [
+        field for field in st.session_state.field_order if field in field_names
+    ]
     
     # Display current order with move up/down buttons
     for i, field in enumerate(st.session_state.field_order):
@@ -106,3 +121,57 @@ def field_order_interface(field_names):
                     st.rerun()
     
     return st.session_state.field_order.copy()
+
+def field_specific_settings(field_name, fields_config, field_data):
+    """
+    Create field-specific settings interface
+    
+    Args:
+        field_name (str): Name of the field
+        fields_config (dict): Fields configuration dictionary
+        field_data (pd.DataFrame): Field data for determining defaults
+        
+    Returns:
+        dict: Field settings
+    """
+    
+    st.write(f"Configure settings for: **{field_name}**")
+    
+    # Initialize field-specific config if not exists
+    if field_name not in fields_config:
+        fields_config[field_name] = {}
+    
+    # Get field data for this specific field
+    field_specific_data = field_data[field_data["Field"] == field_name]
+    
+    # Harvest rounds setting
+    default_rounds = 1
+    if not field_specific_data.empty and "Harvest rounds" in field_specific_data.columns:
+        try:
+            # Use the most recent year's value as default
+            latest_year_data = field_specific_data.sort_values("Year", ascending=False).iloc[0]
+            if "Harvest rounds" in latest_year_data and not pd.isna(latest_year_data["Harvest rounds"]):
+                default_rounds = int(latest_year_data["Harvest rounds"])
+        except (ValueError, TypeError, IndexError) as e:
+            st.warning(f"Could not determine default harvest rounds for {field_name}: {e}")
+            default_rounds = 1
+    
+    # Use the configured value if it exists, otherwise use the default
+    current_value = fields_config[field_name].get("harvest_rounds", default_rounds)
+    
+    # Ensure current_value is an integer
+    try:
+        current_value = int(current_value)
+    except (ValueError, TypeError):
+        current_value = default_rounds
+    
+    harvest_rounds = st.number_input(
+        "Harvest Rounds",
+        min_value=1,
+        max_value=10,
+        value=current_value,
+        key=f"{field_name}_harvest_rounds",
+        help="Number of harvest rounds for this field"
+    )
+
+    return {'harvest_rounds': harvest_rounds}

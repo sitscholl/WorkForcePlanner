@@ -1,10 +1,9 @@
 import streamlit as st
 import yaml
 import datetime
-import pandas as pd
 
 from src.app_state import save_config, load_config, load_data, CONFIG_PATH
-from src.ui_components import render_sidebar, field_order_interface
+from src.ui_components import render_sidebar, field_order_interface, field_specific_settings
 
 # Set page title
 st.set_page_config(page_title="Settings", page_icon="⚙️")
@@ -189,7 +188,7 @@ with tabs[2]:
                 }
             }
             st.success(f"Model '{new_model_name}' added! Please save changes to persist.")
-            st.experimental_rerun()
+            st.rerun()
 
 # Fields configuration tab (NEW)
 with tabs[3]:
@@ -200,9 +199,14 @@ with tabs[3]:
         with st.spinner("Loading field data..."):
             field_data = load_data(config)
             if field_data is not None and not field_data.empty:
-                # Get unique field names
-                field_names = field_data["Field"].unique().tolist()
-                
+                # Check if Field column exists
+                if "Field" not in field_data.columns:
+                    st.error("Field data must contain a 'Field' column.")
+                    st.info(f"Available columns: {', '.join(field_data.columns.tolist())}")
+                else:
+                    # Get unique field names
+                    field_names = field_data["Field"].unique().tolist()
+                                    
                 # Initialize field order if not already in config
                 if "field_order" not in config["fields_config"]:
                     config["fields_config"]["field_order"] = field_names
@@ -222,37 +226,15 @@ with tabs[3]:
                 
                 for i, field_name in enumerate(field_names):
                     with field_tabs[i]:
-                        st.write(f"Configure settings for: **{field_name}**")
-                        
-                        # Initialize field-specific config if not exists
-                        if field_name not in config["fields_config"]:
-                            config["fields_config"][field_name] = {}
-                        
-                        # Get field data for this specific field
-                        field_specific_data = field_data[field_data["Field"] == field_name]
-                        
-                        # Harvest rounds setting
-                        default_rounds = 1
-                        if not field_specific_data.empty and "Harvest rounds" in field_specific_data.columns:
-                            # Use the most recent year's value as default
-                            latest_year_data = field_specific_data.sort_values("Year", ascending=False).iloc[0]
-                            if "Harvest rounds" in latest_year_data and not pd.isna(latest_year_data["Harvest rounds"]):
-                                default_rounds = int(latest_year_data["Harvest rounds"])
-                        
-                        # Use the configured value if it exists, otherwise use the default
-                        config["fields_config"][field_name]["harvest_rounds"] = st.number_input(
-                            "Harvest Rounds",
-                            min_value=1,
-                            max_value=10,
-                            value=int(config["fields_config"][field_name].get("harvest_rounds", default_rounds)),
-                            key=f"{field_name}_harvest_rounds",
-                            help="Number of harvest rounds for this field"
-                        )
+                        field_settings = field_specific_settings(field_name, config["fields_config"], field_data)
+                        config["fields_config"][field_name]["harvest_rounds"] = field_settings["harvest_rounds"]
                         
             else:
-                st.warning("No field data available.")
+                st.warning("No field data available. Please check your data source configuration.")
+                
     except Exception as e:
         st.error(f"Error loading field data: {str(e)}")
+        st.info("Please check your configuration settings and ensure the data source is accessible.")
 
 # Save changes button
 st.header("Save Changes")
