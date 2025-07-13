@@ -1,7 +1,7 @@
 import pandas as pd
 from datetime import date, time, datetime, timedelta
 
-def schedule_field_work(field_table, workforce, start_date, field_order_column='field_name', hours_column='total_hours'):
+def schedule_field_work(field_table, workforce, start_date, field_order_column='field_name', hours_column='total_hours', harvest_round_column = 'Harvest Round'):
     """
     Schedule field work based on available workforce hours.
     
@@ -29,6 +29,7 @@ def schedule_field_work(field_table, workforce, start_date, field_order_column='
     for _, field_row in field_table.iterrows():
         field_name = field_row[field_order_column]
         required_hours = field_row[hours_column]
+        harvest_round = field_row[harvest_round_column]
         field_start = current_datetime
         remaining_hours = required_hours
         
@@ -63,7 +64,8 @@ def schedule_field_work(field_table, workforce, start_date, field_order_column='
             'Field': field_name,
             'start_date': field_start,
             'end_date': field_end,
-            'total_hours': required_hours
+            'total_hours': required_hours,
+            'Harvest round': harvest_round
         })
         print(f"Finished field {field_name} on {field_end}")
 
