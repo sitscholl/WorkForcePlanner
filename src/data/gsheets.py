@@ -16,6 +16,7 @@ GOOGLE_SHEETS_SCOPES = [
 COLUMN_MAPPING = {
     "Wiesenabschnitt": "Field",
     "Sorte": "Variety",
+    "Sortengruppe": "Variety Group",
     "Jahr": "Year",
     "Pflanzalter": "Tree Age",
     "Baumhöhe": "Tree Height",
@@ -49,9 +50,7 @@ class GoogleSheetsHandler(BaseRawDataPipeline):
             for col in ['Tree Height', 'Hours Zupfen', 'Hours Ernte', 'Count Zupfen', 'Count Ernte', "Harvest rounds"]:
                 df[col] = pd.to_numeric(df[col])
                         
-            # Remove rows with invalid data
-            #df = df.dropna(subset=['field_name', 'required_hours'])
-            #df = df[df['required_hours'] > 0]
+            df['Sector'] = df['Field'] + " (" + df['Variety'] + ")"
             
             if df.empty:
                 st.warning("No valid field data found after cleaning")
