@@ -184,7 +184,7 @@ def field_specific_settings(field_name, fields_config, field_data):
 
 def harvest_round_order_interface(fields_config):
     """
-    Create an interface for ordering all field-harvest round combinations
+    Create an interface for ordering all field-harvest round combinations using an editable dataframe
     
     Args:
         fields_config (dict): Fields configuration dictionary
@@ -193,7 +193,7 @@ def harvest_round_order_interface(fields_config):
         list: Ordered list of dictionaries with field and round keys
     """
     st.subheader("Harvest Round Order")
-    st.write("Drag and drop to reorder field harvest rounds (top = first to work on):")
+    st.write("Enter the order number for each field-harvest round combination:")
     
     # Generate all field-harvest round combinations
     field_harvest_combinations = []
@@ -215,19 +215,21 @@ def harvest_round_order_interface(fields_config):
         st.info("No field-harvest round combinations available.")
         return []
     
-    # Use session state to maintain order
+    # Initialize session state for the order if it doesn't exist
     if 'harvest_round_order' not in st.session_state:
         # Check if there's an existing order in the config
         if 'harvest_round_order' in fields_config and fields_config['harvest_round_order']:
             # Convert existing order to the new dictionary format if needed
             ordered_combinations = []
-            for item in fields_config['harvest_round_order']:
+            for i, item in enumerate(fields_config['harvest_round_order']):
                 if isinstance(item, tuple) or isinstance(item, list):
                     # Convert tuple/list to dict
-                    ordered_combinations.append({"field": item[0], "round": item[1]})
+                    ordered_combinations.append({"field": item[0], "round": item[1], "order": i + 1})
                 elif isinstance(item, dict) and "field" in item and "round" in item:
-                    # Already in the right format
-                    ordered_combinations.append(item)
+                    # Already in the right format, add order
+                    item_with_order = item.copy()
+                    item_with_order["order"] = i + 1
+                    ordered_combinations.append(item_with_order)
                 else:
                     # Skip invalid items
                     continue
@@ -235,6 +237,8 @@ def harvest_round_order_interface(fields_config):
         else:
             # Initialize with current field order and consecutive harvest rounds
             ordered_combinations = []
+            order_counter = 1
+            
             for field_name in fields_config.get('field_order', []):
                 if field_name in fields_config:
                     harvest_rounds = fields_config[field_name].get('harvest_rounds', 1)
@@ -244,22 +248,30 @@ def harvest_round_order_interface(fields_config):
                         harvest_rounds = 1
                         
                     for round_num in range(1, harvest_rounds + 1):
-                        ordered_combinations.append({"field": field_name, "round": round_num})
+                        ordered_combinations.append({"field": field_name, "round": round_num, "order": order_counter})
+                        order_counter += 1
             
             # Add any combinations not in the current order
             for combo in field_harvest_combinations:
                 if not any(existing["field"] == combo["field"] and existing["round"] == combo["round"] 
                           for existing in ordered_combinations):
-                    ordered_combinations.append(combo)
+                    combo_with_order = combo.copy()
+                    combo_with_order["order"] = order_counter
+                    ordered_combinations.append(combo_with_order)
+                    order_counter += 1
                     
             st.session_state.harvest_round_order = ordered_combinations
     
-    # Ensure all combinations are in session state
+    # Ensure all combinations are in session state with an order value
     current_combo_set = {(item["field"], item["round"]) for item in st.session_state.harvest_round_order}
+    max_order = max([item["order"] for item in st.session_state.harvest_round_order], default=0)
     
     for combo in field_harvest_combinations:
         if (combo["field"], combo["round"]) not in current_combo_set:
-            st.session_state.harvest_round_order.append(combo)
+            max_order += 1
+            combo_with_order = combo.copy()
+            combo_with_order["order"] = max_order
+            st.session_state.harvest_round_order.append(combo_with_order)
     
     # Remove combinations that are no longer valid
     valid_combo_set = {(item["field"], item["round"]) for item in field_harvest_combinations}
@@ -268,36 +280,98 @@ def harvest_round_order_interface(fields_config):
         if (combo["field"], combo["round"]) in valid_combo_set
     ]
     
-    # Display current order with move up/down buttons
-    for i, combo in enumerate(st.session_state.harvest_round_order):
-        field_name = combo["field"]
-        round_num = combo["round"]
-        
-        col1, col2, col3, col4, col5 = st.columns([0.1, 0.4, 0.2, 0.15, 0.15], gap='small')
-        
-        with col1:
-            st.write(f"{i+1}.")
-        
-        with col2:
-            st.write(field_name)
-            
-        with col3:
-            st.write(f"Round {round_num}")
-        
-        with col4:
-            if i > 0:
-                if st.button("↑", key=f"up_harvest_{i}"):
-                    # Move up
-                    st.session_state.harvest_round_order[i], st.session_state.harvest_round_order[i-1] = \
-                        st.session_state.harvest_round_order[i-1], st.session_state.harvest_round_order[i]
-                    st.rerun()
-        
-        with col5:
-            if i < len(st.session_state.harvest_round_order) - 1:
-                if st.button("↓", key=f"down_harvest_{i}"):
-                    # Move down
-                    st.session_state.harvest_round_order[i], st.session_state.harvest_round_order[i+1] = \
-                        st.session_state.harvest_round_order[i+1], st.session_state.harvest_round_order[i]
-                    st.rerun()
+    # Create a dataframe from the current order
+    df = pd.DataFrame(st.session_state.harvest_round_order)
     
-    return st.session_state.harvest_round_order.copy()
+    # Rename columns for display
+    display_df = df.copy()
+    display_df.columns = ["Field", "Round", "Order"]
+    
+    # Define a callback function to handle changes
+    def on_change():
+        # Get the edited data
+        edited_data = st.session_state.harvest_round_editor
+        
+        # Check if there are edited rows
+        if 'edited_rows' in edited_data and edited_data['edited_rows']:
+            # First, collect all the changes
+            changes = []
+            
+            # Process each edited row
+            for row_idx, edits in edited_data['edited_rows'].items():
+                # Convert row_idx to integer (it's a string in the edited_data)
+                row_idx = int(row_idx)
+                
+                # Only process if the Order column was changed
+                if 'Order' in edits:
+                    # Get the original row from the display dataframe
+                    original_row = display_df.iloc[row_idx]
+                    field = original_row['Field']
+                    round_num = original_row['Round']
+                    new_order = edits['Order']
+                    
+                    # Find the corresponding item in session state
+                    for i, item in enumerate(st.session_state.harvest_round_order):
+                        if item['field'] == field and item['round'] == round_num:
+                            current_order = item['order']
+                            if new_order != current_order:
+                                changes.append({
+                                    "index": i,
+                                    "field": field,
+                                    "round": round_num,
+                                    "old_order": current_order,
+                                    "new_order": new_order
+                                })
+                            break
+            
+            # Process changes one by one, starting with the ones that decrease order values
+            # (to avoid conflicts when shifting)
+            changes.sort(key=lambda x: (x["new_order"], -x["old_order"]))
+            
+            for change in changes:
+                i = change["index"]
+                new_order = change["new_order"]
+                
+                # Check if the new order already exists in other items
+                conflicts = [j for j, item in enumerate(st.session_state.harvest_round_order) 
+                            if item["order"] == new_order and j != i]
+                
+                if conflicts:
+                    # Shift all items with order >= new_order (except the current one) up by 1
+                    for j, item in enumerate(st.session_state.harvest_round_order):
+                        if j != i and item["order"] >= new_order:
+                            item["order"] += 1
+                
+                # Now set the new order for the current item
+                st.session_state.harvest_round_order[i]["order"] = new_order
+            
+            # Sort the combinations by the order value
+            st.session_state.harvest_round_order.sort(key=lambda x: x["order"])
+            
+            # Normalize the order values to be consecutive integers starting from 1
+            for i, item in enumerate(st.session_state.harvest_round_order):
+                item["order"] = i + 1
+                
+            # Trigger a rerun to update the UI
+            st.rerun()
+    
+    # Create an editable dataframe with the callback
+    edited_df = st.data_editor(
+        display_df,
+        column_config={
+            "Field": st.column_config.TextColumn("Field", disabled=True),
+            "Round": st.column_config.NumberColumn("Harvest Round", disabled=True),
+            "Order": st.column_config.NumberColumn("Order", min_value=1, step=1)
+        },
+        hide_index=True,
+        key="harvest_round_editor",
+        on_change=on_change
+    )
+    
+    # Create a clean version without the order field for returning
+    clean_order = []
+    for item in st.session_state.harvest_round_order:
+        clean_item = {"field": item["field"], "round": item["round"]}
+        clean_order.append(clean_item)
+    
+    return clean_order
