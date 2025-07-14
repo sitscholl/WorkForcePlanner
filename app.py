@@ -23,7 +23,7 @@ workforce = load_workforce(config)
 data_raw, data_clean = load_and_clean_data(config, config['param_name'])
 model = get_trained_model(config, config['param_name'], data_clean)
 predictions = get_predictions(config, config['param_name'], model, data_raw, config['year'])
-predictions_config = apply_fields_config(predictions, config["fields_config"])
+predictions_config = apply_fields_config(predictions, config.get("fields_config"))
 
 # --- Main Content ---
 st.header(f"Schedule for {config['year']}")

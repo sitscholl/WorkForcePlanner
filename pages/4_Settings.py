@@ -199,23 +199,14 @@ with tabs[3]:
         with st.spinner("Loading field data..."):
             field_data = load_data(config)
             if field_data is not None and not field_data.empty:
-                # Check if Field column exists
-                if "Field" not in field_data.columns:
-                    st.error("Field data must contain a 'Field' column.")
+                # Check if Sector column exists
+                if "Sector" not in field_data.columns:
+                    st.error("Field data must contain a 'Sector' column.")
                     st.info(f"Available columns: {', '.join(field_data.columns.tolist())}")
                 else:
                     # Get unique field names
-                    field_names = field_data["Field"].unique().tolist()
-                                    
-                # Initialize field order if not already in config
-                if "field_order" not in config["fields_config"]:
-                    config["fields_config"]["field_order"] = field_names
-                else:
-                    # Add any new fields that might not be in the current order
-                    for field in field_names:
-                        if field not in config["fields_config"]["field_order"]:
-                            config["fields_config"]["field_order"].append(field)
-                
+                    field_names = field_data["Sector"].unique().tolist()
+                                                    
                 # Field-harvest round ordering interface
                 st.divider()
                 st.subheader("Field and Harvest Round Order")

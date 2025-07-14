@@ -1,5 +1,6 @@
 
 import pandas as pd
+import streamlit as st
 
 def apply_fields_config(fields_table, fields_config):
     """
@@ -14,9 +15,12 @@ def apply_fields_config(fields_table, fields_config):
     """
     # Create expanded table with rows for each harvest round
     expanded_rows = []
+
+    if fields_config is None:
+        st.warning('No fields configuration provided. Schedule cannot be generated. Configure field order in Settings first.')
     
     # Check if we have a custom harvest round order
-    if "harvest_round_order" in fields_config and fields_config["harvest_round_order"]:
+    if fields_config is not None and "harvest_round_order" in fields_config and fields_config["harvest_round_order"]:
         # Use the custom harvest round order
         for item in fields_config["harvest_round_order"]:
             # Extract field name and round number from the item
