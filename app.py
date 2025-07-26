@@ -2,11 +2,10 @@ import streamlit as st
 
 from datetime import datetime
 
-from src.app_state import load_config, load_workforce, load_and_clean_data, get_trained_model, get_predictions
+from src.app_state import load_config, load_workforce, load_and_clean_data, get_trained_model, get_predictions, load_field_collection
 from src.planner.scheduler import schedule_field_work
 from src.plot import create_timeline_chart
 from src.ui_components import render_sidebar
-from src.planner.fields import apply_fields_config
 
 # Set page title
 st.set_page_config(page_title="Workforce Planner", page_icon="📊")
@@ -23,11 +22,15 @@ workforce = load_workforce(config)
 if len(workforce.get_workers()) == 0:
         st.warning("No workers available. Please update the workforce data.")
         st.stop()
+field_collection = load_field_collection(config)
+if len(field_collection.get_fields()) == 0:
+        st.warning("No fields available. Please update the FieldCollection data.")
+        st.stop()
 
 data_raw, data_clean = load_and_clean_data(config, config['param_name'])
 model = get_trained_model(config, config['param_name'], data_clean)
 predictions = get_predictions(config, config['param_name'], model, data_raw, config['year'])
-predictions_config = apply_fields_config(predictions, config.get("fields_config"))
+predictions_config = field_collection.apply_field_config(predictions)
 
 # --- Main Content ---
 st.header(f"Schedule for {config['year']}")
