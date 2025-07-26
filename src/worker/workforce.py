@@ -1,4 +1,5 @@
 import yaml
+import streamlit as st
 
 class Workforce:
     def __init__(self):
@@ -75,6 +76,8 @@ class Workforce:
                 self.add_worker(worker)
                 
         except FileNotFoundError:
-            print(f"File {filename} not found. Starting with empty workforce.")
+            st.warning(f"File {filename} not found. Starting with empty workforce.")
+            self.workers = []
         except Exception as e:
-            print(f"Error loading workers from {filename}: {e}")
+            st.error(f"Error loading workers from {filename}: {e}")
+            st.stop()
