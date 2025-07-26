@@ -20,6 +20,10 @@ render_sidebar(config)
 
 # --- Load Data and Models ---
 workforce = load_workforce(config)
+if len(workforce.get_workers()) == 0:
+        st.warning("No workers available. Please update the workforce data.")
+        st.stop()
+
 data_raw, data_clean = load_and_clean_data(config, config['param_name'])
 model = get_trained_model(config, config['param_name'], data_clean)
 predictions = get_predictions(config, config['param_name'], model, data_raw, config['year'])
