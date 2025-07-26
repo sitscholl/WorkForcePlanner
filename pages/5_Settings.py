@@ -190,45 +190,6 @@ with tabs[2]:
             st.success(f"Model '{new_model_name}' added! Please save changes to persist.")
             st.rerun()
 
-# Fields configuration tab (NEW)
-with tabs[3]:
-    st.header("Fields Configuration")
-    
-    # Try to load field data to get the list of fields
-    try:
-        with st.spinner("Loading field data..."):
-            field_data = load_data(config)
-            if field_data is not None and not field_data.empty:
-                # Check if Sector column exists
-                if "Sector" not in field_data.columns:
-                    st.error("Field data must contain a 'Sector' column.")
-                    st.info(f"Available columns: {', '.join(field_data.columns.tolist())}")
-                else:
-                    # Get unique field names
-                    field_names = field_data["Sector"].unique().tolist()
-                                                    
-                # Field-harvest round ordering interface
-                st.divider()
-                st.subheader("Field and Harvest Round Order")
-                st.write("Configure the order in which field harvest rounds will be scheduled.")
-                
-                harvest_round_order = harvest_round_order_interface(config["fields_config"])
-                config["fields_config"]["harvest_round_order"] = harvest_round_order
-                
-                # Update field-specific settings first to ensure harvest rounds are up to date
-                field_tabs = st.tabs(field_names)
-                for i, field_name in enumerate(field_names):
-                    with field_tabs[i]:
-                        field_settings = field_specific_settings(field_name, config["fields_config"], field_data)
-                        config["fields_config"][field_name]["harvest_rounds"] = field_settings["harvest_rounds"]
-                        
-            else:
-                st.warning("No field data available. Please check your data source configuration.")
-                
-    except Exception as e:
-        st.error(f"Error loading field data: {str(e)}")
-        st.info("Please check your configuration settings and ensure the data source is accessible.")
-
 # Save changes button
 st.header("Save Changes")
 if st.button("Save Configuration", type="primary"):
