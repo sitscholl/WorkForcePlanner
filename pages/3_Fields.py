@@ -45,6 +45,7 @@ st.header("Add New Field")
 with st.form("add_field_form"):
     new_field_name = st.text_input("Field Name")
     new_variety = st.text_input("Variety")
+    new_harvest_round = st.number_input("Harvest Round", min_value=1, step=1, value=1, help="Harvest round number (e.g., 1 for first harvest, 2 for second harvest)")
 
     # Show current number of fields and suggest default order
     current_field_count = len(field_collection.get_fields())
@@ -62,10 +63,10 @@ with st.form("add_field_form"):
     if submitted:
         if new_field_name and new_variety:
             try:
-                field = Field(field=new_field_name, variety=new_variety, order=new_order)
+                field = Field(field=new_field_name, variety=new_variety, harvest_round=new_harvest_round, order=new_order)
                 field_collection.add_field(field)
                 field_collection.save(fields_file)
-                st.success(f"Field '{new_field_name}' added at position {new_order}.")
+                st.success(f"Field '{new_field_name}' ({new_variety}) - Round {new_harvest_round} added at position {new_order}.")
                 st.rerun()  # Force rerun to refresh the field list
             except Exception as e:
                 st.error(str(e))
@@ -80,20 +81,15 @@ if not fields:
 else:
     # Show fields in a table format for better overview
     st.subheader("Field Overview")
-    field_data = []
-    for field in fields:
-        field_data.append({
-            "Order": field.order,
-            "Field Name": field.field,
-            "Variety": field.variety
-        })
+
     st.table(field_data)
 
     st.subheader("Edit Fields")
     for i, field in enumerate(fields):
-        with st.expander(f"#{field.order}: {field.field} ({field.variety})"):
+        with st.expander(f"#{field.order}: {field.field} ({field.variety}) - Round {field.harvest_round}"):
             updated_name = st.text_input("Field Name", value=field.field, key=f"name_{i}")
             updated_variety = st.text_input("Variety", value=field.variety, key=f"variety_{i}")
+            updated_harvest_round = st.number_input("Harvest Round", value=field.harvest_round, min_value=1, step=1, key=f"harvest_round_{i}", help="Harvest round number")
 
             # Show current position and allow reordering
             current_order = field.order if field.order is not None else i + 1
@@ -111,8 +107,8 @@ else:
             with col1:
                 if st.button("Update", key=f"update_{i}"):
                     try:
-                        updated_field = Field(field=updated_name, variety=updated_variety, order=updated_order)
-                        field_collection.update_field(field.field, field.variety, updated_field)
+                        updated_field = Field(field=updated_name, variety=updated_variety, harvest_round=updated_harvest_round, order=updated_order)
+                        field_collection.update_field(field.field, field.variety, field.harvest_round, updated_field)
                         field_collection.save(fields_file)
                         st.success(f"Field '{updated_name}' updated.")
                         st.rerun()  # Force rerun to refresh the field list
@@ -121,9 +117,9 @@ else:
             with col2:
                 if st.button("Remove", key=f"remove_{i}"):
                     try:
-                        field_collection.remove_field(field.field, field.variety)
+                        field_collection.remove_field(field.field, field.variety, field.harvest_round)
                         field_collection.save(fields_file)
-                        st.warning(f"Field '{field.field}' removed.")
+                        st.warning(f"Field '{field.field}' ({field.variety}) - Round {field.harvest_round} removed.")
                         st.rerun()  # Force rerun to refresh the field list
                     except Exception as e:
                         st.error(str(e))
