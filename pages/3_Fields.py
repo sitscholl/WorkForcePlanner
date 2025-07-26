@@ -1,5 +1,4 @@
 import streamlit as st
-import yaml
 
 from pathlib import Path
 
@@ -31,43 +30,100 @@ if uploaded_file is not None:
     st.success("Fields loaded from uploaded file.")
     field_collection.load(fields_file)
 
-with st.form("Add Field"):
+# --- Download current fields ---
+if fields_file.exists():
+    with open(fields_file, "rb") as f:
+        st.download_button(
+            label="Download Current Fields YAML",
+            data=f,
+            file_name="fields.yaml",
+            mime="application/x-yaml"
+        )
+
+# --- Add Field ---
+st.header("Add New Field")
+with st.form("add_field_form"):
     new_field_name = st.text_input("Field Name")
     new_variety = st.text_input("Variety")
-    new_order = st.number_input("Order", min_value=1, step=1, value=1)
+
+    # Show current number of fields and suggest default order
+    current_field_count = len(field_collection.get_fields())
+    st.info(f"Current number of fields: {current_field_count}. New field will be inserted at the specified position.")
+
+    new_order = st.number_input(
+        "Order (Position)",
+        min_value=1,
+        max_value=current_field_count + 1,
+        step=1,
+        value=current_field_count + 1,
+        help="Position where this field should be inserted. Existing fields will be shifted down if necessary."
+    )
     submitted = st.form_submit_button("Add Field")
     if submitted:
-        try:
-            field = Field(Field=new_field_name, Variety=new_variety, Order=new_order)
-            field_collection.add_field(field)
-            field_collection.save(fields_file)
-            st.success(f"Field '{new_field_name}' added.")
-        except Exception as e:
-            st.error(str(e))
+        if new_field_name and new_variety:
+            try:
+                field = Field(field=new_field_name, variety=new_variety, order=new_order)
+                field_collection.add_field(field)
+                field_collection.save(fields_file)
+                st.success(f"Field '{new_field_name}' added at position {new_order}.")
+                st.rerun()  # Force rerun to refresh the field list
+            except Exception as e:
+                st.error(str(e))
+        else:
+            st.error("Please fill in Field Name and Variety.")
 
+# --- List and Modify Fields ---
+st.header("Current Fields")
 fields = field_collection.get_fields()
+if not fields:
+    st.info("No fields in the collection.")
+else:
+    # Show fields in a table format for better overview
+    st.subheader("Field Overview")
+    field_data = []
+    for field in fields:
+        field_data.append({
+            "Order": field.order,
+            "Field Name": field.field,
+            "Variety": field.variety
+        })
+    st.table(field_data)
 
-st.subheader("Existing Fields")
-for i, field in enumerate(fields):
-    with st.expander(f"{field.Field} ({field.Variety})"):
-        col1, col2 = st.columns(2)
-        with col1:
-            updated_name = st.text_input(f"Name {i}", value=field.Field, key=f"name_{i}")
-            updated_variety = st.text_input(f"Variety {i}", value=field.Variety, key=f"variety_{i}")
-            updated_order = st.number_input(f"Order {i}", value=field.Order if field.Order is not None else 0, key=f"order_{i}")
-            if st.button(f"Update {i}"):
-                try:
-                    updated_field = Field(Field=updated_name, Variety=updated_variety, Order=updated_order)
-                    field_collection.update_field(field.Field, field.Variety, updated_field)
-                    field_collection.save(fields_file)
-                    st.success(f"Field '{updated_name}' updated.")
-                except Exception as e:
-                    st.error(str(e))
-        with col2:
-            if st.button(f"Remove {i}"):
-                try:
-                    field_collection.remove_field(field.Field, field.Variety)
-                    field_collection.save(fields_file)
-                    st.success(f"Field '{field.Field}' removed.")
-                except Exception as e:
-                    st.error(str(e))
+    st.subheader("Edit Fields")
+    for i, field in enumerate(fields):
+        with st.expander(f"#{field.order}: {field.field} ({field.variety})"):
+            updated_name = st.text_input("Field Name", value=field.field, key=f"name_{i}")
+            updated_variety = st.text_input("Variety", value=field.variety, key=f"variety_{i}")
+
+            # Show current position and allow reordering
+            current_order = field.order if field.order is not None else i + 1
+            updated_order = st.number_input(
+                "Order (Position)",
+                value=current_order,
+                min_value=1,
+                max_value=len(fields),
+                step=1,
+                key=f"order_{i}",
+                help="Change position to reorder this field. Other fields will be shifted accordingly."
+            )
+
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("Update", key=f"update_{i}"):
+                    try:
+                        updated_field = Field(field=updated_name, variety=updated_variety, order=updated_order)
+                        field_collection.update_field(field.field, field.variety, updated_field)
+                        field_collection.save(fields_file)
+                        st.success(f"Field '{updated_name}' updated.")
+                        st.rerun()  # Force rerun to refresh the field list
+                    except Exception as e:
+                        st.error(str(e))
+            with col2:
+                if st.button("Remove", key=f"remove_{i}"):
+                    try:
+                        field_collection.remove_field(field.field, field.variety)
+                        field_collection.save(fields_file)
+                        st.warning(f"Field '{field.field}' removed.")
+                        st.rerun()  # Force rerun to refresh the field list
+                    except Exception as e:
+                        st.error(str(e))
