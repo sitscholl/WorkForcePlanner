@@ -24,15 +24,14 @@ def render_sidebar(config):
         st.title("Current Settings")
         
         # General Settings Section
-        start_date = config.get('start_date')
-        if start_date:
-            start_date = start_date.strftime("%Y-%m-%d")
-        else:
-            start_date = 'Not set'
         st.subheader("General Settings")
         st.info(f"**Year:** {config.get('year', 'Not set')}")
-        st.info(f"**Start Date:** {start_date}")
         st.info(f"**Model:** {config.get('param_name', 'Not set')}")
+
+        start_date = config.get('start_date', {})
+        st.subheader(f"**Start Dates:**")
+        for group, date in start_date.items():
+            st.info(f"**{group.capitalize()}:** {date}")
         
         # Google Sheets Section
         if 'gsheets' in config:

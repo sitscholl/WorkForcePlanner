@@ -37,11 +37,24 @@ st.header(f"Schedule for {config['year']}")
 st.write(f"Using model: {config['param_name']}")
 
 # --- Schedule ---
+# Convert start_date strings to datetime objects if they're in dictionary format
+start_dates = config['start_date']
+if isinstance(start_dates, dict):
+    # Convert string dates to datetime objects
+    start_dates_converted = {}
+    for group, date_str in start_dates.items():
+        if isinstance(date_str, str):
+            start_dates_converted[group] = datetime.strptime(date_str, '%Y-%m-%d')
+        else:
+            start_dates_converted[group] = date_str
+    start_dates = start_dates_converted
+
 schedule_df = schedule_field_work(
         field_table=predictions_config,
         workforce=workforce,
-        start_date=config['start_date'],
+        start_date=start_dates,
         field_order_column='Field',
+        group_name='Variety Group',
         hours_column='predicted_hours'
         )
 

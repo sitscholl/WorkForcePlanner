@@ -81,8 +81,7 @@ if not fields:
 else:
     # Show fields in a table format for better overview
     st.subheader("Field Overview")
-
-    st.table(field_data)
+    st.table(field_collection.to_dataframe())
 
     st.subheader("Edit Fields")
     for i, field in enumerate(fields):
