@@ -7,6 +7,7 @@ import datetime
 
 from .data import GoogleSheetsHandler
 from .worker import Workforce
+from src.fields.field_collection import FieldCollection
 
 CONFIG_PATH = "config.yaml"
 
@@ -41,6 +42,16 @@ def load_workforce(config):
         workforce.load(filename = workforce_file)
         return workforce
     return Workforce()
+
+def load_field_collection(config):
+    
+    field_collection_file = Path(config['field_collection_file'])
+
+    if field_collection_file.exists():
+        collection = FieldCollection()
+        collection.load(filename = field_collection_file)
+        return collection
+    return FieldCollection()
 
 def load_model_class(config, param_name):
     try:
