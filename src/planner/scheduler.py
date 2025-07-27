@@ -85,8 +85,6 @@ def schedule_field_work(
         remaining_daily_capacity = workforce.get_daily_work_hours(current_date)
         daily_worker_count = workforce.get_daily_worker_count(current_date)
 
-        st.write(f"Scheduling group '{group}' starting from {current_datetime.strftime('%Y-%m-%d %H:%M')}")
-
         # The field_table is already ordered according to the harvest_round_order from apply_fields_config
         for _, field_row in group_fields.iterrows():
             field_name = field_row[field_order_column]
