@@ -75,15 +75,17 @@ if not workers:
     st.info("No workers in the workforce.")
 else:
     for i, worker in enumerate(workers):
+        # Use a combination of index and name for more stability
+        worker_key = f"{i}_{worker.name}"
         with st.expander(f"Worker: {worker.name}"):
-            new_name = st.text_input("Name", value=worker.name, key=f'update_name_{i}')
-            new_start_date = st.date_input("Start Date", value = worker.start_date, key=f'update_start_date{i}')
-            new_end_date = st.date_input("End Date", value = worker.end_date, key=f'update_end_date_{i}')
+            new_name = st.text_input("Name", value=worker.name, key=f'update_name_{worker_key}')
+            new_start_date = st.date_input("Start Date", value = worker.start_date, key=f'update_start_date_{worker_key}')
+            new_end_date = st.date_input("End Date", value = worker.end_date, key=f'update_end_date_{worker_key}')
             new_work_days = st.multiselect(
                 "Working Days",
                 options=DAYS_OF_WEEK,
                 default=worker.work_days,  # Use the worker's current days
-                key=f'update_work_days_{i}'
+                key=f'update_work_days_{worker_key}'
             )
             new_work_hours = st.number_input(
                 "Hours Per Day",
@@ -91,12 +93,12 @@ else:
                 max_value=24.0,
                 value=float(worker.work_hours),  # Use the worker's current hours
                 step=0.5,
-                key=f'update_work_hours_{i}'
+                key=f'update_work_hours_{worker_key}'
             )
-            new_payment = st.number_input("Payment", min_value = 0.0, step = .5, value=float(worker.payment), key=f'update_payment_{i}')
+            new_payment = st.number_input("Payment", min_value = 0.0, step = .5, value=float(worker.payment), key=f'update_payment_{worker_key}')
             col1, col2 = st.columns(2)
             with col1:
-                if st.button("Update", key=f"update_{i}"):
+                if st.button("Update", key=f"update_{worker_key}"):
                     updated_worker = Worker(
                         name=new_name,
                         start_date = new_start_date,
@@ -110,7 +112,7 @@ else:
                     st.success(f"Updated worker {worker.name}")
                     st.rerun()  # Force rerun to refresh the worker list
             with col2:
-                if st.button("Remove", key=f"remove_{i}"):
+                if st.button("Remove", key=f"remove_{worker_key}"):
                     workforce.remove_worker(worker.name)
                     workforce.save(workforce_file)
                     st.warning(f"Removed worker {worker.name}")

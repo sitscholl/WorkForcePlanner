@@ -16,12 +16,12 @@ class Workforce:
         return self.workers
 
     def update_worker(self, name, worker):
-        for w in self.workers:
+        for i, w in enumerate(self.workers):
             if w.name == name:
-                self.remove_worker(name)
-                self.add_worker(worker)
+                # Replace the worker at the same position to maintain order
+                self.workers[i] = worker
                 return
-        raise ValueError(f"Worker with name '{worker.name}' not found in the workforce.")
+        raise ValueError(f"Worker with name '{name}' not found in the workforce.")
 
     def remove_worker(self, name):
         for i, w in enumerate(self.workers):
