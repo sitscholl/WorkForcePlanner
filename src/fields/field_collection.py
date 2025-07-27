@@ -83,6 +83,8 @@ class FieldCollection:
         # Convert Pydantic models to dictionaries, excluding the workforce field
         fields_data = [field.model_dump() for field in self.fields]
 
+        Path(filename).parent.mkdir(parents=True, exist_ok=True)
+
         # Save to YAML file
         with open(filename, 'w') as file:
             yaml.dump(fields_data, file, default_flow_style=False, indent=2)

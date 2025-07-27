@@ -19,7 +19,7 @@ config = load_config("config.yaml")
 render_sidebar(config)
 
 field_collection = load_field_collection(config)
-fields_file = Path(config.get('field_collection_file', 'FieldsCollection.yaml'))
+fields_file = Path("config", f"field_collection_{config['year']}.yaml")
 
 # --- Manual Load from Uploaded YAML (overwrites current) ---
 st.header("Persistence")

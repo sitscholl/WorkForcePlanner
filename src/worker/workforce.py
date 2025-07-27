@@ -1,6 +1,8 @@
 import yaml
 import streamlit as st
 
+from pathlib import Path
+
 class Workforce:
     def __init__(self):
         self.workers = []
@@ -50,6 +52,8 @@ class Workforce:
     def save(self, filename='workers.yaml'):
         # Convert Pydantic models to dictionaries, excluding the workforce field
         workers_data = [worker.model_dump(exclude={'workforce'}) for worker in self.workers]
+
+        Path(filename).parent.mkdir(parents=True, exist_ok=True)
 
         # Save to YAML file
         with open(filename, 'w') as file:

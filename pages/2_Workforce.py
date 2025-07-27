@@ -19,7 +19,7 @@ config = load_config("config.yaml")
 render_sidebar(config)
 
 workforce = load_workforce(config)
-workforce_file = Path(config['workforce_file'])
+workforce_file = Path("config", f"Workforce_{config['year']}.yaml")
 
 # --- Manual Load from Uploaded YAML (overwrites current) ---
 st.header("Persistence")

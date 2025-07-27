@@ -35,7 +35,7 @@ def save_config(config, file) -> bool:
 
 def load_workforce(config):
     
-    workforce_file = Path(config['workforce_file'])
+    workforce_file = Path("config", f"Workforce_{config['year']}.yaml")
 
     if workforce_file.exists():
         workforce = Workforce()
@@ -45,7 +45,7 @@ def load_workforce(config):
 
 def load_field_collection(config):
     
-    field_collection_file = Path(config['field_collection_file'])
+    field_collection_file = Path("config", f"field_collection_{config['year']}.yaml")
 
     if field_collection_file.exists():
         collection = FieldCollection()
