@@ -13,6 +13,8 @@ st.title("Workforce Planner")
 
 # --- Load  ---
 config = load_config("config.yaml")
+st.header(f"Schedule for {config['year']}")
+st.write(f"Using model: {config['param_name']}")
 
 # --- Render Sidebar ---
 render_sidebar(config)
@@ -33,8 +35,6 @@ predictions = get_predictions(config, config['param_name'], model, data_raw, con
 predictions_config = field_collection.apply_field_config(predictions)
 
 # --- Main Content ---
-st.header(f"Schedule for {config['year']}")
-st.write(f"Using model: {config['param_name']}")
 
 # --- Schedule ---
 # Convert start_date strings to datetime objects if they're in dictionary format
