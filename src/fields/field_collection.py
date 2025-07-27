@@ -2,6 +2,8 @@ import yaml
 import streamlit as st
 import pandas as pd
 
+from pathlib import Path
+
 class FieldCollection:
     def __init__(self):
         self.fields = []
@@ -165,6 +167,7 @@ class FieldCollection:
             ]
 
             if matching_rows.empty:
+                st.warning(f"Field '{field.field}' with variety '{field.variety}' not found in the table.")
                 continue  # Skip if field not found in table
 
             # Get the first matching row (should be unique per field-variety)
