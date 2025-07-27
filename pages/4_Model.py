@@ -112,12 +112,12 @@ with col3:
     st.subheader("ℹ️ Model Info")
 
     # Model configuration details
-    st.markdown(f"**Target Variable:** {config[param_name]['target']}")
-    st.markdown(f"**CV Method:** {config[param_name]['cv_method']}")
-    st.markdown(f"**Features:** {len(config[param_name]['predictors'])}")
-    st.markdown(f"**Target Variable:** {config[param_name]['target']}")
-    st.markdown(f"**CV Method:** {config[param_name]['cv_method']}")
-    st.markdown(f"**Features:** {len(config[param_name]['predictors'])}")
+    st.markdown(f"**Target Variable:** {config['models'][param_name]['target']}")
+    st.markdown(f"**CV Method:** {config['models'][param_name]['cv_method']}")
+    st.markdown(f"**Features:** {len(config['models'][param_name]['predictors'])}")
+    st.markdown(f"**Target Variable:** {config['models'][param_name]['target']}")
+    st.markdown(f"**CV Method:** {config['models'][param_name]['cv_method']}")
+    st.markdown(f"**Features:** {len(config['models'][param_name]['predictors'])}")
     st.markdown(f"**Data Points:** {len(data_clean)}")
 
 # Data overview section
@@ -134,9 +134,9 @@ with col2:
     st.markdown("**Target Variable Distribution**")
     fig = px.histogram(
         data_clean, 
-        x=config[param_name]['target'],
+        x=config['models'][param_name]['target'],
         nbins=30,
-        title=f"Distribution of {config[param_name]['target']}"
+        title=f"Distribution of {config['models'][param_name]['target']}"
     )
     fig.update_layout(height=300)
     st.plotly_chart(fig, use_container_width=True)
@@ -170,7 +170,7 @@ if 'cv_scores' in metrics:
 
 model_scatterplot = create_predictions_scatterplot(
     predictions, 
-    obs_col = config[param_name]['target'],
+    obs_col = config['models'][param_name]['target'],
     pred_col = 'predicted_hours',
     field_col = 'Field',
     year_col = 'Year'
