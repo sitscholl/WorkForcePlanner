@@ -2,8 +2,8 @@ import streamlit as st
 import yaml
 import datetime
 
-from src.app_state import save_config, load_config, load_data, CONFIG_PATH
-from src.ui_components import render_sidebar, field_order_interface, field_specific_settings, harvest_round_order_interface
+from src.app_state import save_config, load_config, CONFIG_PATH
+from src.ui_components import render_sidebar
 
 # Set page title
 st.set_page_config(page_title="Settings", page_icon="⚙️")
@@ -21,7 +21,7 @@ if "fields_config" not in config:
 render_sidebar(config)
 
 # Create tabs for different configuration sections
-tabs = st.tabs(["General", "Google Sheets", "Models", "Fields"])
+tabs = st.tabs(["General", "Google Sheets", "Models"])
 
 # General settings tab
 with tabs[0]:
@@ -35,32 +35,28 @@ with tabs[0]:
         value=int(config.get("year", 2025)),
         help="The year for scheduling"
     )
-    
-    # Start date setting
-    start_date_str = config.get("start_date", "2025-09-01")
-    if isinstance(start_date_str, datetime.datetime) or isinstance(start_date_str, datetime.date):
-        start_date_str = start_date_str.strftime("%Y-%m-%d")
-    start_date = st.date_input(
-        "Start Date",
-        value=None if not start_date_str else datetime.datetime.strptime(start_date_str.split(" ")[0], "%Y-%m-%d"),
-        help="The start date for scheduling"
-    )
-    config["start_date"] = str(start_date)
-    
-    # Workforce file setting
-    config["workforce_file"] = st.text_input(
-        "Workforce File",
-        value=config.get("workforce_file", "workforce.yaml"),
-        help="Path to the workforce configuration file"
-    )
-    
+
     # Parameter name setting
     config["param_name"] = st.text_input(
-        "Default Parameter Name",
+        "Parameter Name",
         value=config.get("param_name", "Ernte"),
-        help="Default parameter name to use in the application"
+        help="Parameter name to use in the application"
     )
-
+    
+    # Start date setting
+    start_date_dict = config.get("start_date", {})
+    st.subheader('Start Dates')
+    for group, start_date in start_date_dict.items():
+        if isinstance(start_date, datetime.datetime) or isinstance(start_date, datetime.date):
+            start_date = start_date.strftime("%Y-%m-%d")
+        start_date = st.date_input(
+            f"{group}",
+            value=None if not start_date else datetime.datetime.strptime(start_date.split(" ")[0], "%Y-%m-%d"),
+            help="The start date for scheduling",
+            key = f"start_date_{group}"
+        )
+        config["start_date"][group] = str(start_date)
+        
 # Google Sheets settings tab
 with tabs[1]:
     st.header("Google Sheets Integration")
@@ -94,7 +90,7 @@ with tabs[2]:
     st.header("Model Configuration")
     
     # Create subtabs for each model
-    model_names = [key for key in config.keys() if key not in ["year", "start_date", "workforce_file", "gsheets", "param_name", "fields_config"]]
+    model_names = list(config.get('models', {}).keys())
     
     if not model_names:
         st.warning("No model configurations found in config.yaml")
@@ -105,41 +101,41 @@ with tabs[2]:
             with model_tabs[i]:
                 st.subheader(f"{model_name} Model")
                 
-                if model_name not in config:
-                    config[model_name] = {}
+                if model_name not in config['models']:
+                    config['models'][model_name] = {}
                 
                 # Model class
-                config[model_name]["class"] = st.text_input(
+                config['models'][model_name]["class"] = st.text_input(
                     "Model Class",
-                    value=config[model_name].get("class", "src.model.linear_regression.LinearRegressionPredictor"),
+                    value=config['models'][model_name].get("class", "src.model.linear_regression.LinearRegressionPredictor"),
                     key=f"{model_name}_class",
                     help="Fully qualified class name for the model"
                 )
                 
                 # Target column
-                config[model_name]["target"] = st.text_input(
+                config['models'][model_name]["target"] = st.text_input(
                     "Target Column",
-                    value=config[model_name].get("target", f"Hours {model_name}"),
+                    value=config['models'][model_name].get("target", f"Hours {model_name}"),
                     key=f"{model_name}_target",
                     help="Target column for prediction"
                 )
                 
                 # Predictors
-                predictors_str = ", ".join(config[model_name].get("predictors", []))
+                predictors_str = ", ".join(config['models'][model_name].get("predictors", []))
                 new_predictors = st.text_input(
                     "Predictors (comma-separated)",
                     value=predictors_str,
                     key=f"{model_name}_predictors",
                     help="Comma-separated list of predictor columns"
                 )
-                config[model_name]["predictors"] = [p.strip() for p in new_predictors.split(",") if p.strip()]
+                config['models'][model_name]["predictors"] = [p.strip() for p in new_predictors.split(",") if p.strip()]
                 
                 # Cross-validation method
-                config[model_name]["cv_method"] = st.selectbox(
+                config['models'][model_name]["cv_method"] = st.selectbox(
                     "Cross-Validation Method",
                     options=["group_kfold", "kfold", "stratified_kfold", "time_series_split"],
-                    index=0 if "cv_method" not in config[model_name] else 
-                          ["group_kfold", "kfold", "stratified_kfold", "time_series_split"].index(config[model_name]["cv_method"]),
+                    index=0 if "cv_method" not in config['models'][model_name] else 
+                          ["group_kfold", "kfold", "stratified_kfold", "time_series_split"].index(config['models'][model_name]["cv_method"]),
                     key=f"{model_name}_cv_method",
                     help="Method for cross-validation"
                 )
@@ -147,22 +143,22 @@ with tabs[2]:
                 # CV parameters
                 st.subheader("Cross-Validation Parameters")
                 
-                if "cv_params" not in config[model_name]:
-                    config[model_name]["cv_params"] = {}
+                if "cv_params" not in config['models'][model_name]:
+                    config['models'][model_name]["cv_params"] = {}
                 
-                if config[model_name]["cv_method"] == "group_kfold":
-                    config[model_name]["cv_params"]["group_column"] = st.text_input(
+                if config['models'][model_name]["cv_method"] == "group_kfold":
+                    config['models'][model_name]["cv_params"]["group_column"] = st.text_input(
                         "Group Column",
-                        value=config[model_name]["cv_params"].get("group_column", "Year"),
+                        value=config['models'][model_name]["cv_params"].get("group_column", "Year"),
                         key=f"{model_name}_group_column",
                         help="Column to use for grouping in group k-fold"
                     )
                 
-                config[model_name]["cv_params"]["n_splits"] = st.number_input(
+                config['models'][model_name]["cv_params"]["n_splits"] = st.number_input(
                     "Number of Splits",
                     min_value=-1,
                     max_value=20,
-                    value=int(config[model_name]["cv_params"].get("n_splits", 5)),
+                    value=int(config['models'][model_name]["cv_params"].get("n_splits", 5)),
                     key=f"{model_name}_n_splits",
                     help="Number of splits for cross-validation (-1 for leave-one-out)"
                 )
