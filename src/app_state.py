@@ -56,7 +56,7 @@ def load_field_collection(config):
 def load_model_class(config, param_name):
     try:
         # Get the full class path
-        class_path = config[param_name]['class']
+        class_path = config['models'][param_name]['class']
 
         # Split module path and class name
         module_path, class_name = class_path.rsplit('.', 1)
@@ -84,9 +84,9 @@ def load_data(config):
 
 def clean_data(data, config, param_name, include_target = True):
     if include_target:
-        return data.dropna(subset=[config[param_name]['target']] + config[param_name]['predictors'])
+        return data.dropna(subset=[config['models'][param_name]['target']] + config['models'][param_name]['predictors'])
     else:
-        return data.dropna(subset=config[param_name]['predictors'])
+        return data.dropna(subset=config['models'][param_name]['predictors'])
 
 @st.cache_data
 def load_and_clean_data(config, param_name, include_target = True):
@@ -100,10 +100,10 @@ def get_trained_model(config, param_name, data):
     predictor = model()
     _ = predictor.train(
         data=data,
-        target_column=config[param_name]['target'],
-        feature_columns=config[param_name]['predictors'],
-        cv_method=config[param_name]['cv_method'],
-        cv_params=config[param_name]['cv_params']
+        target_column=config['models'][param_name]['target'],
+        feature_columns=config['models'][param_name]['predictors'],
+        cv_method=config['models'][param_name]['cv_method'],
+        cv_params=config['models'][param_name]['cv_params']
     )
 
     return predictor
