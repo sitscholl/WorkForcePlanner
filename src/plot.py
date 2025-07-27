@@ -5,11 +5,11 @@ import datetime
 def create_timeline_chart(schedule_df: pd.DataFrame, current_date: datetime.date = None) -> go.Figure:
     """
     Create an interactive timeline chart showing field work schedules
-    
+
     Args:
         schedule_df: DataFrame with schedule information
         current_date: Current date to show as vertical line
-        
+
     Returns:
         plotly.graph_objects.Figure: Timeline chart
     """
@@ -22,14 +22,14 @@ def create_timeline_chart(schedule_df: pd.DataFrame, current_date: datetime.date
             font=dict(size=16)
         )
         return fig
-    
+
     fig = go.Figure()
-    
+
     # Create timeline bars
-    for i, row in schedule_df.iterrows():
-        # Calculate bar position
-        y_pos = len(schedule_df) - i - 1
-        
+    for idx, (i, row) in enumerate(schedule_df.iterrows()):
+        # Calculate bar position using sequential index, not DataFrame index
+        y_pos = len(schedule_df) - idx - 1
+
         # Create hover text
         hover_text = (
             f"<b>{row['Field']}</b><br>"
@@ -39,7 +39,7 @@ def create_timeline_chart(schedule_df: pd.DataFrame, current_date: datetime.date
             #f"Days Needed: {row['days_needed']}<br>"
             #f"Utilization: {row['worker_utilization']:.1f}%"
         )
-        
+
         # Add timeline bar
         fig.add_trace(go.Scatter(
             x=[row['start_date'], row['end_date']],
@@ -50,7 +50,7 @@ def create_timeline_chart(schedule_df: pd.DataFrame, current_date: datetime.date
             name=row['Field'],
             showlegend=False
         ))
-        
+
         # Add field name annotation
         fig.add_annotation(
             x=row['start_date'] + (row['end_date'] - row['start_date']) / 2,
@@ -62,7 +62,7 @@ def create_timeline_chart(schedule_df: pd.DataFrame, current_date: datetime.date
             bordercolor='white',
             borderwidth=1
         )
-    
+
     # Add current date line
     if current_date:
         fig.add_shape(
@@ -77,7 +77,7 @@ def create_timeline_chart(schedule_df: pd.DataFrame, current_date: datetime.date
                 dash="dash",
             )
         )
-        
+
         # Add "Today" annotation
         fig.add_annotation(
             x=current_date,
@@ -86,7 +86,7 @@ def create_timeline_chart(schedule_df: pd.DataFrame, current_date: datetime.date
             showarrow=False,
             yshift=10
         )
-    
+
     # Update layout
     fig.update_layout(
         title="Field Work Timeline",
@@ -104,7 +104,7 @@ def create_timeline_chart(schedule_df: pd.DataFrame, current_date: datetime.date
         plot_bgcolor='white',
         paper_bgcolor='white'
     )
-    
+
     return fig
 
 def create_predictions_scatterplot(

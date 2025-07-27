@@ -60,9 +60,13 @@ schedule_df = schedule_field_work(
 
 st.markdown('---')
 st.subheader("📆 Labour Timeline")
-timeline_fig = create_timeline_chart(schedule_df, datetime.now())
-st.plotly_chart(timeline_fig, use_container_width=True)
-
+group_names = list(schedule_df['Variety Group'].unique())
+tabs = st.tabs(group_names)
+for tab, group_name in zip(tabs, group_names):
+    with tab:
+        group_data = schedule_df[schedule_df['Variety Group'] == group_name]
+        timeline_fig = create_timeline_chart(group_data, datetime.now())
+        st.plotly_chart(timeline_fig, use_container_width=True)
 st.markdown('---')
 st.subheader("💾 Fields Data")
 st.dataframe(schedule_df)
