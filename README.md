@@ -32,3 +32,38 @@ To use Google Sheets integration, you need to set up Google Cloud credentials:
 3. Add the service account email (found in the JSON file) as an editor
 4. Make sure "Notify people" is unchecked
 5. Click "Share"
+
+## Scheduling Configuration
+
+The workforce planner supports different start dates for different variety groups. This allows you to schedule work for early varieties, main varieties, and late varieties at different times.
+
+### Configuration Format
+
+In your `config.yaml` file, you can specify different start dates for each variety group:
+
+```yaml
+start_date:
+  frühsorte: '2025-08-24'    # Early varieties start date
+  hauptsorte: '2025-09-17'   # Main varieties start date
+  spätsorte: '2025-10-17'    # Late varieties start date
+```
+
+### Field Data Requirements
+
+Your field data must include a column that specifies the variety group for each field. By default, this column should be named "Variety Group", but you can customize this in the scheduler function.
+
+Example field data structure:
+```
+Field Name          | Variety Group | Hours Required | Harvest Round
+Parleng (Gala)      | frühsorte    | 120           | 1
+Gasslwiese (Golden) | hauptsorte   | 80            | 1
+Neuacker (Golden)   | spätsorte    | 95            | 1
+```
+
+### How It Works
+
+1. Fields are grouped by their variety group
+2. Each group is scheduled starting from its specified start date
+3. Work is scheduled sequentially within each group
+4. The scheduler ensures no overlapping work between groups
+5. Later groups will start either at their specified date or after the previous group finishes, whichever is later
