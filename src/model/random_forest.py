@@ -20,7 +20,7 @@ if __name__ == '__main__':
     from ..data.gsheets import GoogleSheetsHandler
     from ..config import load_config
 
-    config = load_config('config.yaml')
+    config = load_config('config/config.yaml')
 
     gsheets = GoogleSheetsHandler()
     gsheets.setup_credentials_from_file('gsheets_creds.json')

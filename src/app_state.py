@@ -9,7 +9,7 @@ from .data import GoogleSheetsHandler
 from .worker import Workforce
 from src.fields.field_collection import FieldCollection
 
-CONFIG_PATH = "config.yaml"
+CONFIG_PATH = "config/config.yaml"
 
 @st.cache_data
 def load_config(file):

@@ -12,7 +12,7 @@ st.set_page_config(page_title="Workforce Planner", page_icon="📊")
 st.title("Workforce Planner")
 
 # --- Load  ---
-config = load_config("config.yaml")
+config = load_config("config/config.yaml")
 st.header(f"Schedule for {config['year']}")
 st.write(f"Using model: {config['param_name']}")
 

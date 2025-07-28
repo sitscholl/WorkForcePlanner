@@ -30,7 +30,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- Load  ---
-config = load_config("config.yaml")
+config = load_config("config/config.yaml")
 
 # --- Render Sidebar ---
 render_sidebar(config)

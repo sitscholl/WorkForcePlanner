@@ -13,7 +13,7 @@ st.set_page_config(page_title="Field Management", page_icon="🗃")
 st.title("Field Management")
 
 # --- Load  ---
-config = load_config("config.yaml")
+config = load_config("config/config.yaml")
 
 # --- Render Sidebar ---
 render_sidebar(config)

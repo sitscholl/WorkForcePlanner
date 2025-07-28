@@ -151,7 +151,7 @@ if __name__ == '__main__':
     from src.utils import load_data_and_train_model, load_workforce
     from pathlib import Path
 
-    config = load_config('config.yaml')
+    config = load_config('config/config.yaml')
     predictor, data = load_data_and_train_model(config)
     workforce = load_workforce(Path(config['workforce_file']))
 
