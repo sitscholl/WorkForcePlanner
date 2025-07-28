@@ -5,13 +5,13 @@
 set -e
 
 CONTAINER_NAME="workforce-planner-app"
-IMAGE_NAME="workforce-planner"
+IMAGE_NAME="ghcr.io/sitscholl/workforce-planner-app:latest"
 
 case "$1" in
-    "build")
-        echo "Building Docker image..."
-        docker build -t $IMAGE_NAME .
-        echo "✅ Docker image built successfully!"
+    "pull")
+        echo "Pulling latest image from GitHub Container Registry..."
+        docker pull $IMAGE_NAME
+        echo "✅ Latest image pulled successfully!"
         ;;
     "start")
         echo "Starting Workforce Planner..."
@@ -48,10 +48,10 @@ case "$1" in
     *)
         echo "Workforce Planner Docker Management"
         echo ""
-        echo "Usage: $0 {build|start|stop|restart|logs|shell|clean}"
+        echo "Usage: $0 {pull|start|stop|restart|logs|shell|clean}"
         echo ""
         echo "Commands:"
-        echo "  build   - Build the Docker image"
+        echo "  pull    - Pull latest image from GitHub Container Registry"
         echo "  start   - Start the application"
         echo "  stop    - Stop the application"
         echo "  restart - Restart the application"
@@ -60,7 +60,7 @@ case "$1" in
         echo "  clean   - Remove container and image"
         echo ""
         echo "Quick start:"
-        echo "  1. $0 build"
+        echo "  1. $0 pull"
         echo "  2. $0 start"
         echo "  3. Open http://localhost:8501 in your browser"
         exit 1
