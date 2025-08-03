@@ -14,6 +14,9 @@ RUN apt-get update && apt-get install -y \
     g++ \
     && rm -rf /var/lib/apt/lists/*
 
+# Install curl for heathcheck
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
 # Copy requirements first for better caching
 COPY pyproject.toml ./
 COPY requirements.txt ./
