@@ -44,7 +44,11 @@ if isinstance(start_dates, dict):
     start_dates_converted = {}
     for group, date_str in start_dates.items():
         if isinstance(date_str, str):
-            start_dates_converted[group] = datetime.strptime(date_str, '%Y-%m-%d %H:%M')
+            try:
+                start_dates_converted[group] = datetime.strptime(date_str, '%Y-%m-%d %H:%M')
+            except Exception as e:
+                st.error(f"Error parsing date for group '{group}' ({date_str}) with error: {e}")
+                st.stop()
         else:
             start_dates_converted[group] = date_str
     start_dates = start_dates_converted
