@@ -7,11 +7,8 @@ from src.ui_components import render_sidebar
 from src.plot import create_predictions_scatterplot
 
 # Page configuration
-st.set_page_config(
-    page_title="Model Performance Dashboard",
-    page_icon="ud83dudcca",
-    layout="wide"
-)
+st.set_page_config(page_title="Model Performance Dashboard", page_icon="ud83dudcca")
+st.title("Model Performance Dashboard")
 
 # Custom CSS for better styling
 st.markdown("""
