@@ -1,4 +1,7 @@
 import streamlit as st
+import plotly.express as px
+import pandas as pd
+from datetime import datetime, timedelta
 
 from pathlib import Path
 
@@ -117,3 +120,65 @@ else:
                     workforce.save(workforce_file)
                     st.warning(f"Removed worker {worker.name}")
                     st.rerun()  # Force rerun to refresh the worker list
+
+# --- Daily Work Hours Visualization ---
+st.header("Daily Work Hours Overview")
+workers = workforce.get_workers()
+
+if workers:
+    # Find the date range across all workers
+    start_dates = [worker.start_date.date() if hasattr(worker.start_date, 'date') else worker.start_date for worker in workers]
+    end_dates = [worker.end_date.date() if hasattr(worker.end_date, 'date') else worker.end_date for worker in workers]
+    
+    overall_start = min(start_dates)
+    overall_end = max(end_dates)
+    
+    # Generate all dates in the range
+    dates = []
+    daily_hours = []
+    current_date = overall_start
+    
+    while current_date <= overall_end:
+        dates.append(current_date)
+        daily_hours.append(workforce.get_daily_work_hours(current_date))
+        current_date += timedelta(days=1)
+    
+    # Create DataFrame for Plotly
+    df = pd.DataFrame({
+        'Date': dates,
+        'Daily Work Hours': daily_hours
+    })
+    
+    # Create the bar plot
+    fig = px.bar(
+        df, 
+        x='Date', 
+        y='Daily Work Hours',
+        title='Daily Work Hours Over Time',
+        labels={'Daily Work Hours': 'Total Daily Work Hours'},
+        color='Daily Work Hours',
+        color_continuous_scale='viridis'
+    )
+    
+    # Customize the layout
+    fig.update_layout(
+        xaxis_title="Date",
+        yaxis_title="Total Daily Work Hours",
+        showlegend=False,
+        height=500
+    )
+    
+    # Display the plot
+    st.plotly_chart(fig, use_container_width=True)
+    
+    # Display some summary statistics
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("Total Days", len(dates))
+    with col2:
+        st.metric("Average Daily Hours", f"{sum(daily_hours) / len(daily_hours):.1f}")
+    with col3:
+        st.metric("Peak Daily Hours", max(daily_hours))
+        
+else:
+    st.info("Add workers to see the daily work hours visualization.")
