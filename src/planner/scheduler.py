@@ -128,7 +128,7 @@ def schedule_field_work(
                 'Harvest round': harvest_round,
                 'Variety Group': group
             })
-            print(f"Finished field {field_name} (group {group}, round {harvest_round}) on {field_end}")
+            print(f"Finished field {field_name} (round {harvest_round}) on {field_end}")
 
             # Use rounded end time as start for next field
             current_datetime = field_end
