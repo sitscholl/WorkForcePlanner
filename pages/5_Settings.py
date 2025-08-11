@@ -17,6 +17,10 @@ config = load_config(CONFIG_PATH)
 if "fields_config" not in config:
     config["fields_config"] = {}
 
+# Initialize start_date if it doesn't exist
+if "start_date" not in config:
+    config["start_date"] = {}
+
 # Render sidebar
 render_sidebar(config)
 
@@ -26,12 +30,12 @@ tabs = st.tabs(["General", "Google Sheets", "Models"])
 # General settings tab
 with tabs[0]:
     st.header("General Settings")
-    
+
     # Year setting
     config["year"] = st.number_input(
-        "Year", 
-        min_value=2020, 
-        max_value=2030, 
+        "Year",
+        min_value=2020,
+        max_value=2030,
         value=int(config.get("year", 2025)),
         help="The year for scheduling"
     )
@@ -42,20 +46,43 @@ with tabs[0]:
         value=config.get("param_name", "Ernte"),
         help="Parameter name to use in the application"
     )
-    
+
     # Start date setting
     start_date_dict = config.get("start_date", {})
     st.subheader('Start Dates')
-    for group, start_date in start_date_dict.items():
-        if isinstance(start_date, datetime.datetime) or isinstance(start_date, datetime.date):
-            start_date = start_date.strftime("%Y-%m-%d")
-        start_date = st.date_input(
-            f"{group}",
-            value=None if not start_date else datetime.datetime.strptime(start_date.split(" ")[0], "%Y-%m-%d"),
-            help="The start date for scheduling",
-            key = f"start_date_{group}"
-        )
-        config["start_date"][group] = str(start_date)
+    col1, col2 = st.columns([2, 2])
+    for group, config_start_date in start_date_dict.items():
+        parsed_start_date = None
+        if isinstance(config_start_date, str):
+            try:
+                parsed_start_date = datetime.datetime.strptime(config_start_date, "%Y-%m-%d %H:%M:%S")
+            except Exception as e:
+                st.warning(f"Failed to parse start date for group {group} from config with error: {e}. Please insert new value")
+                parsed_start_date = None
+        elif config_start_date is not None:
+            parsed_start_date = config_start_date
+
+        with col1:
+            user_start_date = st.date_input(
+                f"Start date for {group}",
+                value=None if parsed_start_date is None else parsed_start_date.date(),
+                help="The start date for scheduling",
+                key=f"start_date_{group}"
+            )
+        with col2:
+            user_start_time = st.time_input(
+                f"Start Time for {group}",
+                value=None if parsed_start_date is None else parsed_start_date.time(),
+                help="The start time for scheduling",
+                key=f"start_time_{group}"
+            )
+
+        # Only combine if both date and time are provided
+        if user_start_date is not None and user_start_time is not None:
+            config["start_date"][group] = str(datetime.datetime.combine(user_start_date, user_start_time))
+        else:
+            # Keep the original value if user hasn't provided complete input
+            config["start_date"][group] = config_start_date
         
 # Google Sheets settings tab
 with tabs[1]:
