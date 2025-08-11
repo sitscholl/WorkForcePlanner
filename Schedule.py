@@ -71,6 +71,12 @@ for tab, group_name in zip(tabs, group_names):
         group_data = schedule_df[schedule_df['Variety Group'] == group_name]
         timeline_fig = create_timeline_chart(group_data, datetime.now())
         st.plotly_chart(timeline_fig, use_container_width=True)
+
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric("Total working hours", group_data['total_hours'].sum().round(1))
+        with col2:
+            st.metric("Total working days", str(group_data['end_date'].max() - group_data['start_date'].min()))
 st.markdown('---')
 st.subheader("💾 Fields Data")
 st.dataframe(schedule_df)
