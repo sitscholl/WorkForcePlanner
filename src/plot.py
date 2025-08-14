@@ -2,13 +2,14 @@ import plotly.graph_objects as go
 import pandas as pd
 import datetime
 
-def create_timeline_chart(schedule_df: pd.DataFrame, current_date: datetime.date = None) -> go.Figure:
+def create_timeline_chart(schedule_df: pd.DataFrame, current_date: datetime.date = None, erntefenster: dict = None) -> go.Figure:
     """
     Create an interactive timeline chart showing field work schedules
 
     Args:
         schedule_df: DataFrame with schedule information
         current_date: Current date to show as vertical line
+        erntefenster: Dictionary with variety names as keys and dates as values for harvest windows
 
     Returns:
         plotly.graph_objects.Figure: Timeline chart
@@ -52,16 +53,16 @@ def create_timeline_chart(schedule_df: pd.DataFrame, current_date: datetime.date
         ))
 
         # Add field name annotation
-        fig.add_annotation(
-            x=row['start_date'] + (row['end_date'] - row['start_date']) / 2,
-            y=y_pos,
-            text=row['Field'],
-            showarrow=False,
-            font=dict(color='white', size=10),
-            bgcolor='rgba(0,0,0,0.5)',
-            bordercolor='white',
-            borderwidth=1
-        )
+        # fig.add_annotation(
+        #     x=row['start_date'] + (row['end_date'] - row['start_date']) / 2,
+        #     y=y_pos,
+        #     text=row['Field'],
+        #     showarrow=False,
+        #     font=dict(color='white', size=10),
+        #     bgcolor='rgba(0,0,0,0.5)',
+        #     bordercolor='white',
+        #     borderwidth=1
+        # )
 
     # Add current date line
     if current_date:
@@ -86,6 +87,43 @@ def create_timeline_chart(schedule_df: pd.DataFrame, current_date: datetime.date
             showarrow=False,
             yshift=10
         )
+
+    # Add erntefenster lines
+    if erntefenster:
+        colors = ['blue', 'green', 'orange', 'purple', 'brown', 'pink']  # Different colors for variety lines
+        for idx, (variety, date) in enumerate(erntefenster.items()):
+            color = colors[idx % len(colors)]  # Cycle through colors if more varieties than colors
+
+            # Convert date string to datetime if needed
+            if isinstance(date, str):
+                date = pd.to_datetime(date).date()
+
+            # Add vertical line
+            fig.add_shape(
+                type="line",
+                x0=date,
+                y0=0,
+                x1=date,
+                y1=len(schedule_df),
+                line=dict(
+                    color=color,
+                    width=2,
+                    dash="dot",
+                )
+            )
+
+            # Add variety label annotation
+            fig.add_annotation(
+                x=date,
+                y=len(schedule_df) + 0.5 + (idx * 0.3),  # Stagger annotations vertically
+                text=variety,
+                showarrow=False,
+                yshift=10,
+                font=dict(color=color, size=10),
+                bgcolor='rgba(255,255,255,0.8)',
+                bordercolor=color,
+                borderwidth=1
+            )
 
     # Update layout
     fig.update_layout(
